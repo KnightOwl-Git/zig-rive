@@ -5,4 +5,4 @@ zig-out/
 *.o
 .DS_Store
 zig-pkg/
-
+compile_commands.json

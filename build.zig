@@ -21,17 +21,19 @@ pub fn build(b: *std.Build) void {
         .link_libcpp = true,
     });
 
-    mod.addCSourceFile(.{ .file = b.path("src/rive.cpp") });
+    mod.addCSourceFile(.{ .file = b.path("src/riveWrapper.cpp") });
 
     const riveLib = rive.artifact("rive");
     const riveRendererLib = rive.artifact("rive_renderer");
-    targets.append(b.allocator, riveLib) catch @panic("OOM");
+    // targets.append(b.allocator, riveLib) catch @panic("OOM");
     // targets.append(b.allocator, riveRendererLib) catch @panic("OOM");
 
     mod.linkLibrary(riveLib);
     mod.linkLibrary(riveRendererLib);
 
     const lib = b.addLibrary(.{ .name = "riveZig", .root_module = mod });
+
+    targets.append(b.allocator, lib) catch @panic("OOM");
 
     b.installArtifact(lib);
 
