@@ -17,6 +17,10 @@
             .url = "git+https://codeberg.org/7Games/zig-sdl3?ref=v0.2.1#7cf436e4a8622a0232e53ea5cb4df82e8cadaaaa",
             .hash = "sdl3-0.2.1-NmT1Q9YZKAAmuTV7fFuZHwH2jFQtw2uvVahQSMSD6DbK",
         },
+        .mach_objc = .{
+            .url = "git+https://code.hexops.org/hexops/mach-objc.git#7064a4479b8cb85736ff6fe90ae34465d04ace55",
+            .hash = "mach_objc-0.0.0-pF1e0qYwDQAiwxSRszSrjoQ7OMCJBT0kmesKXnI9DStn",
+        },
     },
     .paths = .{
         "build.zig",

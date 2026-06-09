@@ -19,8 +19,9 @@ pub fn build(b: *std.Build) void {
     });
     const c_mod = translate_c.createModule();
     c_mod.addCSourceFile(.{ .file = b.path("src/riveWrapper.cpp") });
+    c_mod.addCSourceFile(.{ .file = b.path("src/metalsetup.mm") });
 
-    const mod = b.addModule("zig_rive", .{
+    const rivezig_mod = b.addModule("zig_rive", .{
         // .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
@@ -30,6 +31,9 @@ pub fn build(b: *std.Build) void {
     });
 
     const sdl3 = b.dependency("sdl3", .{});
+    //platform specific
+
+    const objc = b.dependency("mach_objc", .{});
 
     const example = b.addModule("sdl_rive_example", .{
         .target = target,
@@ -39,6 +43,7 @@ pub fn build(b: *std.Build) void {
             // .{ .name = "rive", .module = mod },
             .{ .name = "sdl3", .module = sdl3.module("sdl3") },
             .{ .name = "c", .module = c_mod }, //eventually put this in mod and import mod instead
+            .{ .name = "objc", .module = objc.module("mach-objc") },
         },
     });
 
@@ -48,23 +53,21 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe);
 
-    mod.addCSourceFile(.{ .file = b.path("src/riveWrapper.cpp") });
-
     const riveLib = rive.artifact("rive");
     const riveRendererLib = rive.artifact("rive_renderer");
     // targets.append(b.allocator, riveLib) catch @panic("OOM");
     // targets.append(b.allocator, riveRendererLib) catch @panic("OOM");
 
-    mod.linkLibrary(riveLib);
+    rivezig_mod.linkLibrary(riveLib);
+    // mod.linkFramework("Metal", .{});
+    rivezig_mod.linkLibrary(riveRendererLib);
     c_mod.linkLibrary(riveLib);
     c_mod.linkLibrary(riveRendererLib);
-    mod.linkLibrary(riveRendererLib);
-
-    const lib = b.addLibrary(.{ .name = "riveZig", .root_module = mod });
+    c_mod.linkFramework("Metal", .{});
+    c_mod.linkFramework("Foundation", .{});
+    const lib = b.addLibrary(.{ .name = "riveZig", .root_module = rivezig_mod });
 
     targets.append(b.allocator, lib) catch @panic("OOM");
-
-    b.installArtifact(lib);
 
     //step for generating compile commands
     _ = zcc.createStep(b, "cdb", targets.toOwnedSlice(b.allocator) catch @panic("OOM"));

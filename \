@@ -12,8 +12,11 @@ pub fn main() !void {
     try sdl3.init(.{ .video = true });
     defer sdl3.shutdown();
 
-    const window = try sdl3.video.Window.init("riveTest", 640, 480, .{ .resizable = true, .metal = true, .high_pixel_density = true });
+    const window = try sdl3.video.Window.init("riveTest", 640, 480, .{ .resizable = true, .metal = true });
     var quit = false;
+
+    const metalView = sdl3.MetalView.init(window);
+    const metalLayer = metalView.?.getLayer();
 
     var result: c.Rive_ImportResult = undefined;
 
@@ -29,28 +32,15 @@ pub fn main() !void {
     //just for testing
     const SMcount = c.rive_artboard_stateMachineCount(artboard);
     std.debug.print("state machine count: {d}\n", .{SMcount});
-    const stateMachine = c.rive_artboard_defaultStateMachine(artboard) orelse @panic("state machine null");
-
-    // const windowProps = try window.getProperties();
-    // const nsWindow: *objc.app_kit.Window = @ptrCast(windowProps.cocoa_window.?.value.?);
-    // const nsView = nsWindow.*.contentView().?;
-    // nsView.setWantsLayer(true);
+    const stateMachine = c.rive_artboard_stateMachineAt(artboard, 0) orelse @panic("null");
 
     const width, const height = try window.getSize();
     const renderTarget = c.rive_getMetalRenderTarget(renderContext, @intCast(width), @intCast(height)) orelse @panic("null");
     const queue = mtlDevice.newCommandQueue() orelse @panic("null");
     const renderer = c.rive_getRendererFromContext(renderContext);
-
-    const metalView = sdl3.MetalView.init(window);
-    const metalLayer = metalView.?.getLayer();
     const swapchain: *objc.quartz_core.MetalLayer = @ptrCast(metalLayer);
-
     swapchain.setDevice(mtlDevice);
     swapchain.setPixelFormat(objc.metal.PixelFormatBGRA8Unorm);
-    swapchain.setDisplaySyncEnabled(true); //Vsync
-    // nsView.setLayer(@ptrCast(swapchain));
-
-    var last_ticks = sdl3.timer.getMillisecondsSinceInit();
 
     //run loop
     while (!quit) {
@@ -61,12 +51,7 @@ pub fn main() !void {
                 else => {},
             }
         }
-        //calculate delta time
-        const new_ticks = sdl3.timer.getMillisecondsSinceInit();
-        const dt = new_ticks - last_ticks;
-        last_ticks = new_ticks;
-
-        try riveRender(swapchain, queue, renderTarget, window, stateMachine, renderContext, renderer, dt);
+        try riveRender(swapchain, queue, renderTarget, window, stateMachine, renderContext, renderer);
     }
     defer window.deinit();
     c.rive_freeRenderer(renderer);
@@ -79,30 +64,25 @@ fn riveRender(
     window: sdl3.video.Window,
     sm: *c.Rive_StateMachineInstance,
     renderContext: *c.Rive_RenderContext,
-    renderer: ?*c.Rive_RiveRenderer,
-    dt: u64,
+    renderer: *c.Rive_RiveRenderer,
 ) !void {
     //advance the state machine
-    const dtFloat: f32 = @floatFromInt(dt);
-    c.rive_SMIadvanceAndApply(sm, dtFloat / 1000);
-    // std.debug.print("dt: {d}", .{dt});
-
-    const pixelDensity = try window.getPixelDensity();
-    _ = pixelDensity;
+    c.rive_SMIadvanceAndApply(sm, 0.01);
 
     const width, const height = try window.getSize();
-
     var frame = c.Rive_FrameDescriptor{
         .render_target_width = @intCast(width),
         .render_target_height = @intCast(height),
-        .clear_color = 0xffffff,
+        .clear_color = 0xff5245,
     };
 
     c.rive_contextBeginFrame(renderContext, &frame);
 
-    c.rive_rendererSave(renderer);
+    // c.rive_rendererSave(renderer);
     c.rive_SMIdraw(sm, renderer);
-    c.rive_rendererRestore(renderer);
+    // c.rive_rendererRestore(renderer);
+
+    std.debug.print("drawablewidth: {d}\n", .{metalLayer.drawableSize().width});
 
     const currentFrameSurface = objc.quartz_core.MetalLayer.nextDrawable(metalLayer) orelse @panic("surface null");
 

@@ -24,8 +24,10 @@ typedef struct Rive_RiveRenderer {
 } Rive_RiveRenderer;
 
 typedef struct Rive_RenderTarget Rive_RenderTarget;
+typedef struct Rive_RenderTargetMetal Rive_RenderTargetMetal;
 typedef struct Rive_FlushResources {
   Rive_RenderTarget *renderTarget;
+  void* externalCommandBuffer;
 } Rive_FlushResources;
 
 typedef struct Rive_Alignment {
@@ -68,14 +70,26 @@ rive_artboard_stateMachineAt(Rive_ArtboardInstance *artboard, size_t index);
 
 // rive::stateMachineInstance
 void rive_SMIadvanceAndApply(Rive_StateMachineInstance *sm, float secs);
+void rive_SMIdraw(Rive_StateMachineInstance* sm, Rive_RiveRenderer* renderer); //this should be scene not smi
 
 // rive::RenderContext
 void rive_contextBeginFrame(Rive_RenderContext *context,
                             Rive_FrameDescriptor *fd);
 void rive_contextFlush(Rive_RenderContext *context, Rive_FlushResources *flush);
 
+Rive_Factory* rive_contextToFactory(Rive_RenderContext *context);
+
+Rive_RenderContext *rive_MakeContextMetal(void *mtl_device);
+Rive_RiveRenderer* rive_getRendererFromContext(Rive_RenderContext* context);
+Rive_RenderTargetMetal* rive_getMetalRenderTarget(Rive_RenderContext *context, uint32_t width, uint32_t height);
+
+void rive_setMetalTargetTexture(Rive_RenderTargetMetal *target, void *frame_surface);
+
+
 // rive::RiveRenderer
 void rive_rendererSave(Rive_RiveRenderer *renderer);
+void rive_rendererRestore(Rive_RiveRenderer* renderer);
+void rive_freeRenderer(Rive_RiveRenderer* renderer);
 
 // BindeableArtboard
 
