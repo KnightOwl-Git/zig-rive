@@ -1,7 +1,8 @@
 
 .zig-cache/
 .cache/
-zig-out/
+zig-out/lib
+zig-out/bin
 *.o
 .DS_Store
 zig-pkg/
