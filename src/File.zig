@@ -18,8 +18,6 @@ pub fn import(data: [:0]const u8, factory: anytype) !@This() {
 
     // const span: []const u8 = std.mem.span(data);
 
-    std.debug.print("file: {s}", .{data});
-
     const ret = c.rive_file_import(data, data.len, @ptrCast(c_factory), c_out);
 
     if (c_out == c.RIVE_IMPORT_MALFORMED) {
