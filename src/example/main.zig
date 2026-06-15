@@ -39,7 +39,6 @@ pub fn main() !void {
 
     const vmi = try file.createDefaultViewModelInstance(artboard);
     artboard.bindViewModelInstance(vmi);
-    stateMachine.bindViewModelInstance(vmi);
 
     const windowProps = try window.getProperties();
     const nsWindow: *objc.app_kit.Window = @ptrCast(windowProps.cocoa_window.?.value.?);
