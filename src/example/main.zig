@@ -12,7 +12,7 @@ pub fn main() !void {
     //TODO fix memory leak, probably get rid of autoreleasepool
     //TODO start writing zig wrappper
 
-    const riv = @embedFile("fuecoco.riv");
+    const riv = @embedFile("lp_level_editor.riv");
 
     //initialize sdl
     try sdl3.init(.{ .video = true });
@@ -35,6 +35,12 @@ pub fn main() !void {
 
     const stateMachine = try artboard.defaultStateMachine();
 
+    // bind view model instance to artboard
+
+    const vmi = try file.createDefaultViewModelInstance(artboard);
+    artboard.bindViewModelInstance(vmi);
+    stateMachine.bindViewModelInstance(vmi);
+
     const windowProps = try window.getProperties();
     const nsWindow: *objc.app_kit.Window = @ptrCast(windowProps.cocoa_window.?.value.?);
     // const nsView = nsWindow.*.contentView().?;
@@ -45,7 +51,7 @@ pub fn main() !void {
     const queue = mtlDevice.newCommandQueue() orelse @panic("null");
     const renderer = try renderContext.makeRenderer();
 
-    renderContext.setMetalCommandQueue(queue);
+    // renderContext.setMetalCommandQueue(queue);
 
     const metalView = sdl3.MetalView.init(window);
     const metalLayer = metalView.?.getLayer();

@@ -3,10 +3,15 @@
 #include "rive/factory.hpp"
 #include "rive/file.hpp"
 #include "rive/math/mat2d.hpp"
+#include "rive/refcnt.hpp"
 #include "rive/renderer/render_context.hpp"
 #include "rive/renderer/render_target.hpp"
 #include "rive/renderer/rive_renderer.hpp"
+#include "rive/viewmodel/runtime/viewmodel_instance_list_runtime.hpp"
+#include "rive/viewmodel/runtime/viewmodel_instance_runtime.hpp"
 #include "rive/span.hpp"
+#include "rive/viewmodel/runtime/viewmodel_runtime.hpp"
+#include "rive/viewmodel/viewmodel_instance.hpp"
 #include "utils/no_op_factory.hpp"
 #include <cstddef>
 #include <cstdint>
@@ -18,6 +23,9 @@ struct Rive_File : public rive::File {
 
   using rive::File::import;
 };
+
+//TODO: Can I put everything in header file?
+//TODO: Figure out memory management
 
 extern "C" {
 
@@ -64,12 +72,27 @@ Rive_ArtboardInstance *rive_file_artboardDefault(Rive_File *file) {
       cpp_file->artboardDefault().release());
 };
 
+Rive_ViewModelRuntime* rive_defaultArtboardViewModel(Rive_File* file, Rive_ArtboardInstance* artboard) {
+  auto* cpp_artboard = reinterpret_cast<rive::ArtboardInstance*>(artboard);
+  auto* cpp_file = reinterpret_cast<rive::File*>(file);
+  return reinterpret_cast<Rive_ViewModelRuntime*>(cpp_file->defaultArtboardViewModel(cpp_artboard));
+
+}
+
 // headless factory for testing
 Rive_Factory *rive_factory_createHeadless() {
   return reinterpret_cast<Rive_Factory *>(new rive::NoOpFactory());
 }
 
-// rive::Artboard
+Rive_ViewModelInstance* rive_createDefaultViewModelInstanceFromArtboard(Rive_File* self, Rive_ArtboardInstance* artboard) {
+  auto* cpp_artboard = reinterpret_cast<rive::ArtboardInstance*>(artboard);
+  auto* cpp_file = reinterpret_cast<rive::File*>(self);
+  return reinterpret_cast<Rive_ViewModelInstance*>(cpp_file->createDefaultViewModelInstance(cpp_artboard).release());
+
+
+}
+
+// rive::ArtboardInstance
 size_t rive_artboard_stateMachineCount(Rive_ArtboardInstance *artboard) {
   if (!artboard)
     return 0;
@@ -116,6 +139,16 @@ void rive_artboardSetHeight(Rive_ArtboardInstance *artboard, float height) {
   reinterpret_cast<rive::ArtboardInstance *>(artboard)->height(height);
 }
 
+void rive_artboardBindViewModelInstance(Rive_ArtboardInstance* artboard, Rive_ViewModelInstance* vmi) {
+  auto* cpp_artboard = reinterpret_cast<rive::ArtboardInstance*>(artboard);
+  auto* cpp_vmi = reinterpret_cast<rive::ViewModelInstance*>(vmi);
+  rive::rcp<rive::ViewModelInstance> cpp_vmi_rcp(cpp_vmi);
+  cpp_artboard->bindViewModelInstance(cpp_vmi_rcp);
+
+}
+
+
+
 // rive::stateMachineInstance
 void rive_SMIadvanceAndApply(Rive_StateMachineInstance *sm, float secs) {
   if (sm) {
@@ -132,6 +165,13 @@ void rive_SMIdraw(Rive_StateMachineInstance *sm, Rive_RiveRenderer *renderer) {
     rive::Renderer *cpp_renderer = reinterpret_cast<rive::Renderer *>(renderer);
     cpp_smi->draw(cpp_renderer);
   }
+}
+void rive_stateMachineBindViewModelInstance(Rive_StateMachineInstance* smi, Rive_ViewModelInstance* vmi) {
+  auto* cpp_smi = reinterpret_cast<rive::StateMachineInstance*>(smi);
+  auto* cpp_vmi = reinterpret_cast<rive::ViewModelInstance*>(vmi);
+  rive::rcp<rive::ViewModelInstance> cpp_vmi_rcp(cpp_vmi);
+  cpp_smi->bindViewModelInstance(cpp_vmi_rcp);
+
 }
 
 // rive::renderContext
@@ -171,8 +211,6 @@ Rive_RiveRenderer *rive_getRendererFromContext(Rive_RenderContext *context) {
 Rive_Factory *rive_contextToFactory(Rive_RenderContext *context) {
   return reinterpret_cast<Rive_Factory *>(context);
 }
-
-// rive::
 
 // rive::riveRenderer
 
@@ -222,5 +260,31 @@ int rive_renderTargetGetHeight(void *target) {
   auto *cpp_target = static_cast<rive::gpu::RenderTarget *>(target);
   return cpp_target->height();
 }
+
+//rive::ViewModelRuntime
+
+Rive_ViewModelInstanceRuntime* rive_createDefaultVMInstance(Rive_ViewModelRuntime* vm) {
+  auto* cpp_vm = reinterpret_cast<rive::ViewModelRuntime*>(vm);
+  auto rcp = cpp_vm->createDefaultInstance();
+  return reinterpret_cast<Rive_ViewModelInstanceRuntime*>(cpp_vm->createDefaultInstance().release());
+
+}
+
+//rive::ViewModelInstanceRuntime
+
+Rive_ViewModelInstance* rive_getViewModelInstance(Rive_ViewModelInstanceRuntime* vmi) {
+  auto* cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime*>(vmi);
+  rive::rcp<rive::ViewModelInstanceRuntime> cpp_vmi_rcp(cpp_vmi);
+  return reinterpret_cast<Rive_ViewModelInstance*>(cpp_vmi_rcp->instance().release());
+}
+
+//TODO: figure out how to release
+
+// void rive_VMRuntimeRelease(Rive_ViewModelInstanceRuntime* instance) {
+//   auto* cpp_instance = reinterpret_cast<rive::ViewModelInstanceRuntime*>()
+//   rive::rcp<rive::ViewModelInstanceRuntime > instance_to_release(reinterpret_cast<rive::File*>(file));
+//
+// }
+
 
 } // end extern "C"

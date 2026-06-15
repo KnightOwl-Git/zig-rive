@@ -13,6 +13,9 @@ typedef struct Rive_Factory Rive_Factory;
 typedef struct Rive_ArtboardInstance Rive_ArtboardInstance;
 typedef struct Rive_StateMachineInstance Rive_StateMachineInstance;
 typedef struct Rive_RenderContext Rive_RenderContext;
+typedef struct Rive_ViewModelRuntime Rive_ViewModelRuntime;
+typedef struct Rive_ViewModelInstanceRuntime Rive_ViewModelInstanceRuntime;
+typedef struct Rive_ViewModelInstance Rive_ViewModelInstance;
 typedef struct Rive_FrameDescriptor {
   uint32_t render_target_width;
   uint32_t render_target_height;
@@ -60,6 +63,8 @@ Rive_File *rive_file_import(const uint8_t *data, size_t size,
                             Rive_ImportResult *out_result);
 void rive_file_release(Rive_File *file);
 Rive_ArtboardInstance *rive_file_artboardDefault(Rive_File *file);
+Rive_ViewModelRuntime* rive_defaultArtboardViewModel(Rive_File* file, Rive_ArtboardInstance* artboard);
+Rive_ViewModelInstance* rive_createDefaultViewModelInstanceFromArtboard(Rive_File* self, Rive_ArtboardInstance* artboard);
 
 // rive::Artboard
 size_t rive_artboard_stateMachineCount(Rive_ArtboardInstance *artboard);
@@ -69,10 +74,12 @@ Rive_StateMachineInstance *
 rive_artboard_stateMachineAt(Rive_ArtboardInstance *artboard, size_t index);
 void rive_artboardSetWidth(Rive_ArtboardInstance* artboard, float width);
 void rive_artboardSetHeight(Rive_ArtboardInstance* artboard, float height);
+void rive_artboardBindViewModelInstance(Rive_ArtboardInstance* artboard, Rive_ViewModelInstance* vmi);
 
 // rive::stateMachineInstance
 void rive_SMIadvanceAndApply(Rive_StateMachineInstance *sm, float secs);
 void rive_SMIdraw(Rive_StateMachineInstance* sm, Rive_RiveRenderer* renderer); //this should be scene not smi
+void rive_stateMachineBindViewModelInstance(Rive_StateMachineInstance* smi, Rive_ViewModelInstance* vmi);
 
 // rive::RenderContext
 void rive_contextBeginFrame(Rive_RenderContext *context,
@@ -100,7 +107,14 @@ void rive_rendererDPIScale(Rive_RiveRenderer* renderer, float dpiScale);
 int rive_renderTargetGetWidth(void* target);
 int rive_renderTargetGetHeight(void* target);
 
-// BindeableArtboard
+//rive::ViewModelRuntime
+
+Rive_ViewModelInstanceRuntime* rive_createDefaultVMInstance(Rive_ViewModelRuntime* vm);
+
+//rive::ViewModelInstanceRuntime
+
+Rive_ViewModelInstance* rive_getViewModelInstance(Rive_ViewModelInstanceRuntime* vmi);
+
 
 #ifdef __cplusplus
 }

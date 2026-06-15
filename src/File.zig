@@ -2,8 +2,9 @@
 const c = @import("c");
 const Factory = @import("Factory.zig");
 const std = @import("std");
-const errors = @import("errrors.zig");
+const errors = @import("errors.zig");
 const artboard = @import("Artboard.zig");
+const rive = @import("rive.zig");
 
 value: *c.Rive_File,
 
@@ -11,6 +12,8 @@ const ImportResult = error{
     unsupported_version,
     malformed,
 };
+
+//TODO: provide higher level databinding functions
 
 pub fn import(data: [:0]const u8, factory: anytype) !@This() {
     const c_factory = factory.value;
@@ -29,9 +32,22 @@ pub fn import(data: [:0]const u8, factory: anytype) !@This() {
     return .{ .value = try errors.wrapNull(*c.Rive_File, ret) };
 }
 
-pub fn artboardDefault(self: @This()) !artboard.ArtboardInstance {
+pub inline fn artboardDefault(self: @This()) !artboard.ArtboardInstance {
     return .{ .value = try errors.wrapNull(
         *c.Rive_ArtboardInstance,
         c.rive_file_artboardDefault(self.value),
+    ) };
+}
+
+pub inline fn defaultArtboardViewModel(self: @This(), ab: rive.artboard.ArtboardInstance) !rive.data_binding.ViewModelRuntime {
+    return .{ .value = try errors.wrapNull(
+        *c.Rive_ViewModelRuntime,
+        c.rive_defaultArtboardViewModel(self.value, ab.value),
+    ) };
+}
+pub inline fn createDefaultViewModelInstance(self: @This(), ab: rive.artboard.ArtboardInstance) !rive.data_binding.ViewModelInstance {
+    return .{ .value = try errors.wrapNull(
+        *c.Rive_ViewModelInstance,
+        c.rive_createDefaultViewModelInstanceFromArtboard(self.value, ab.value),
     ) };
 }

@@ -2,7 +2,7 @@
 
 const c = @import("c");
 const Factory = @import("Factory.zig");
-const errors = @import("errrors.zig");
+const errors = @import("errors.zig");
 const rive = @import("rive.zig");
 
 pub const RenderContext = struct {
