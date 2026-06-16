@@ -12,7 +12,7 @@ pub fn main() !void {
     //TODO fix memory leak, probably get rid of autoreleasepool
     //TODO start writing zig wrappper
 
-    const riv = @embedFile("lp_level_editor.riv");
+    const riv = @embedFile("fuecoco.riv");
 
     //initialize sdl
     try sdl3.init(.{ .video = true });
@@ -35,10 +35,12 @@ pub fn main() !void {
 
     const stateMachine = try artboard.defaultStateMachine();
 
-    // bind view model instance to artboard
+    // bind default view model instance to artboard. if one exists
 
-    const vmi = try file.createDefaultViewModelInstance(artboard);
-    artboard.bindViewModelInstance(vmi);
+    const vmi = file.createDefaultViewModelInstance(artboard);
+    if (vmi) |viewmodel| {
+        artboard.bindViewModelInstance(viewmodel);
+    }
 
     const windowProps = try window.getProperties();
     const nsWindow: *objc.app_kit.Window = @ptrCast(windowProps.cocoa_window.?.value.?);
@@ -85,6 +87,15 @@ pub fn main() !void {
             .terminating => {
                 quit.store(true, .monotonic);
             },
+            .mouse_button_down => {
+                stateMachine.pointerDown(event.mouse_button_down.x, event.mouse_button_down.y);
+            },
+            .mouse_button_up => {
+                stateMachine.pointerUp(event.mouse_button_up.x, event.mouse_button_up.y);
+            },
+            .mouse_motion => {
+                stateMachine.pointerMove(event.mouse_motion.x, event.mouse_motion.y);
+            },
             else => {},
         }
     }
@@ -96,7 +107,7 @@ pub fn main() !void {
 fn riveRender(
     metalLayer: *objc.quartz_core.MetalLayer,
     queue: *metal.CommandQueue,
-    target: *rive.RenderTargetMetal,
+    target: *rive.gpu.RenderTargetMetal,
     window: ?*objc.app_kit.Window,
     sm: rive.StateMachineInstance,
     renderContext: rive.gpu.RenderContext,
@@ -123,7 +134,15 @@ fn riveRender(
         artboard.setWidth(width_f / pixelDensity);
         artboard.setHeight(height_f / pixelDensity);
 
-        target.* = try renderContext.makeRenderTargetMetal(@intCast(width_d), @intCast(height_d));
+        if (target.width() != width_d or target.height() != height_d) {
+            //window size has changed
+            //NOTE: this seems to cause a slight memory leak when resizing window, it's unclear why.
+
+            // const pool2 = objc.objc.autoreleasePoolPush();
+            target.* = try renderContext.makeRenderTargetMetal(@intCast(width_d), @intCast(height_d));
+            // objc.objc.autoreleasePoolPop(pool2);
+        }
+        // defer target.deinit();
         target.setTargetTexture(currentFrameSurface.texture());
 
         renderContext.beginFrame(.{
@@ -152,7 +171,8 @@ fn riveRender(
         presentCommandBuffer.commit();
         target.setTargetTexture(null);
         presentCommandBuffer.waitUntilCompleted();
-        //
+
+        //prob delete these
         // currentFrameSurface.release();
         // flushCommandBuffer.release();
         // presentCommandBuffer.release();

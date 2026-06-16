@@ -2,7 +2,9 @@
 #import "riveWrapper.h"
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
+#include <cstddef>
 #include <cstdint>
+#include <stdio.h>
 
 using namespace rive::gpu;
 
@@ -26,16 +28,35 @@ Rive_RenderContext *rive_MakeContextMetal(void *mtl_device) {
 Rive_RenderTargetMetal *rive_getMetalRenderTarget(Rive_RenderContext *context,
                                                   uint32_t width,
                                                   uint32_t height) {
+
   if (!context)
     return nullptr;
   auto *cpp_context = reinterpret_cast<rive::gpu::RenderContext *>(context);
+
   auto *renderContextImpl =
       cpp_context->static_impl_cast<rive::gpu::RenderContextMetalImpl>();
-  return reinterpret_cast<Rive_RenderTargetMetal *>(
-      renderContextImpl
-          // TODO: expose format
-          ->makeRenderTarget(MTLPixelFormatBGRA8Unorm, width, height)
-          .release());
+
+  auto rcp = renderContextImpl->makeRenderTarget(MTLPixelFormatBGRA8Unorm,
+                                                 width, height);
+
+  /* rcp.reset(); */
+  /* auto target = rcp.release(); */
+  /* delete target; */
+  /**/
+  return reinterpret_cast<Rive_RenderTargetMetal *>(rcp.release());
+}
+
+int rive_metalRenderTargetRelease(Rive_RenderTargetMetal *self) {
+  if (self) {
+
+    auto *target = reinterpret_cast<rive::gpu::RenderTargetMetal *>(self);
+
+    /* rive::rcp<rive::gpu::RenderTargetMetal> rcp(target); */
+    /* free(target); */
+    /* target = nullptr; */
+    /* return target->debugging_refcnt(); */
+  }
+  return 0;
 }
 
 void rive_setMetalCommandQueue(Rive_RenderContext *context, void *queue) {

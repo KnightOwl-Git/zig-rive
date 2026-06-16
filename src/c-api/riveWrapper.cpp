@@ -174,6 +174,22 @@ void rive_stateMachineBindViewModelInstance(Rive_StateMachineInstance* smi, Rive
 
 }
 
+void rive_pointerDown(Rive_StateMachineInstance* self, float x, float y) {
+  auto* cpp_smi = reinterpret_cast<rive::StateMachineInstance*>(self);
+  cpp_smi->pointerDown({x, y});
+}
+
+void rive_pointerUp(Rive_StateMachineInstance* self, float x, float y) {
+  auto* cpp_smi = reinterpret_cast<rive::StateMachineInstance*>(self);
+  cpp_smi->pointerUp({x, y});
+}
+
+//TODO: Maybe use Vec2D instaed of float x and y?
+void rive_pointerMove(Rive_StateMachineInstance* self, float x, float y) {
+  auto* cpp_smi = reinterpret_cast<rive::StateMachineInstance*>(self);
+  cpp_smi->pointerMove({x, y});
+}
+
 // rive::renderContext
 void rive_contextBeginFrame(Rive_RenderContext *context,
                             Rive_FrameDescriptor fd) {

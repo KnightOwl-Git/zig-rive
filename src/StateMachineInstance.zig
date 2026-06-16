@@ -15,3 +15,15 @@ pub inline fn draw(self: @This(), renderer: RiveRenderer) void {
 pub inline fn bindViewModelInstance(self: @This(), vmi: rive.data_binding.ViewModelInstance) void {
     c.rive_stateMachineBindViewModelInstance(self.value, vmi.value);
 }
+
+pub inline fn pointerDown(self: @This(), x: f32, y: f32) void {
+    c.rive_pointerDown(self.value, x, y);
+}
+
+pub inline fn pointerUp(self: @This(), x: f32, y: f32) void {
+    c.rive_pointerUp(self.value, x, y);
+}
+
+pub inline fn pointerMove(self: @This(), x: f32, y: f32) void {
+    c.rive_pointerMove(self.value, x, y);
+}

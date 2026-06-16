@@ -11,10 +11,3 @@ pub const data_binding = @import("data_binding.zig");
 
 pub const RiveRenderer = @import("RiveRenderer.zig");
 //TODO:: Categorize this better?
-
-pub const RenderTargetMetal = struct {
-    value: *c.Rive_RenderTargetMetal,
-    pub inline fn setTargetTexture(self: *@This(), texture: ?*anyopaque) void {
-        c.rive_setMetalTargetTexture(self.value, texture);
-    }
-};

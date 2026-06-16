@@ -4,6 +4,7 @@ const c = @import("c");
 const Factory = @import("Factory.zig");
 const errors = @import("errors.zig");
 const rive = @import("rive.zig");
+const std = @import("std");
 
 pub const RenderContext = struct {
     value: *c.Rive_RenderContext,
@@ -17,10 +18,11 @@ pub const RenderContext = struct {
     };
 
     //TODO: make this into an interface
-    pub inline fn makeRenderTargetMetal(self: @This(), width: u32, height: u32) !rive.RenderTargetMetal {
+    pub inline fn makeRenderTargetMetal(self: @This(), width: u32, height: u32) !RenderTargetMetal {
+        const ret = c.rive_getMetalRenderTarget(self.value, width, height);
         return .{ .value = try errors.wrapNull(
-            *c.Rive_RenderTargetMetal,
-            c.rive_getMetalRenderTarget(self.value, width, height),
+            *c.struct_Rive_RenderTargetMetal,
+            ret,
         ) };
     }
     pub inline fn makeRenderer(self: @This()) !rive.RiveRenderer {
@@ -56,5 +58,22 @@ pub const RenderContextMetalImpl = struct {
             *c.Rive_RenderContext,
             c.rive_MakeContextMetal(mtl_device),
         ) };
+    }
+};
+
+pub const RenderTargetMetal = struct {
+    value: *c.Rive_RenderTargetMetal,
+    pub inline fn setTargetTexture(self: RenderTargetMetal, texture: ?*anyopaque) void {
+        c.rive_setMetalTargetTexture(self.value, texture);
+    }
+    pub inline fn deinit(self: RenderTargetMetal) void {
+        _ = c.rive_metalRenderTargetRelease(self.value);
+        // std.debug.print("refcount: {d} \n", .{refcount});
+    }
+    pub inline fn width(self: RenderTargetMetal) usize {
+        return @intCast(c.rive_renderTargetGetWidth(self.value));
+    }
+    pub inline fn height(self: RenderTargetMetal) usize {
+        return @intCast(c.rive_renderTargetGetHeight(self.value));
     }
 };

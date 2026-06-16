@@ -33,6 +33,8 @@ typedef struct Rive_FlushResources {
   void* externalCommandBuffer;
 } Rive_FlushResources;
 
+typedef struct Rive_rcpRenderTarget Rive_rcpRenderTarget;
+
 typedef struct Rive_Alignment {
   float m_x, m_y;
 } Rive_Alignment;
@@ -80,6 +82,9 @@ void rive_artboardBindViewModelInstance(Rive_ArtboardInstance* artboard, Rive_Vi
 void rive_SMIadvanceAndApply(Rive_StateMachineInstance *sm, float secs);
 void rive_SMIdraw(Rive_StateMachineInstance* sm, Rive_RiveRenderer* renderer); //this should be scene not smi
 void rive_stateMachineBindViewModelInstance(Rive_StateMachineInstance* smi, Rive_ViewModelInstance* vmi);
+void rive_pointerMove(Rive_StateMachineInstance* self, float x, float y);
+void rive_pointerDown(Rive_StateMachineInstance* self, float x, float y);
+void rive_pointerUp(Rive_StateMachineInstance* self, float x, float y);
 
 // rive::RenderContext
 void rive_contextBeginFrame(Rive_RenderContext *context,
@@ -96,6 +101,10 @@ Rive_RenderTargetMetal* rive_getMetalRenderTarget(Rive_RenderContext *context, u
 
 void rive_setMetalTargetTexture(Rive_RenderTargetMetal *target, void *frame_surface);
 
+// rive::gpu::renderTargetMetal
+
+
+int rive_metalRenderTargetRelease(Rive_RenderTargetMetal *self);
 
 // rive::RiveRenderer
 void rive_rendererSave(Rive_RiveRenderer *renderer);
