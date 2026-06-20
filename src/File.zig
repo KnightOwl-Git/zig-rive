@@ -39,17 +39,11 @@ pub inline fn artboardDefault(self: @This()) !artboard.ArtboardInstance {
     ) };
 }
 
-pub inline fn defaultArtboardViewModel(self: @This(), ab: rive.artboard.ArtboardInstance) !rive.data_binding.ViewModelRuntime {
-    return .{ .value = try errors.wrapNull(
-        *c.Rive_ViewModelRuntime,
-        c.rive_defaultArtboardViewModel(self.value, ab.value),
-    ) };
-}
-pub inline fn createDefaultViewModelInstance(self: @This(), ab: rive.artboard.ArtboardInstance) ?rive.data_binding.ViewModelInstance {
+pub inline fn createDefaultViewModelInstance(self: @This(), ab: rive.artboard.ArtboardInstance) !rive.ViewModelInstance {
     const ret = c.rive_createDefaultViewModelInstanceFromArtboard(self.value, ab.value);
     if (ret) |vmi| {
         return .{ .value = vmi };
     } else {
-        return null;
+        return error.CouldNotCreateDefaultViewModelInstance;
     }
 }

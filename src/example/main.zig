@@ -9,72 +9,30 @@ const rive = @import("rive");
 var quit = std.atomic.Value(bool).init(false);
 
 pub fn main() !void {
-    //TODO fix memory leak, probably get rid of autoreleasepool
-    //TODO start writing zig wrappper
 
-    const riv = @embedFile("fuecoco.riv");
-
-    //initialize sdl
+    //initialize SDL
     try sdl3.init(.{ .video = true });
     defer sdl3.shutdown();
 
     const window = try sdl3.video.Window.init("riveTest", 640, 480, .{ .resizable = true, .metal = true, .high_pixel_density = true });
 
-    // eventually make this separate for each platform
+    // Specific steps for metal, eventually add support for more APIs
     const mtlDevice = metal.createSystemDefaultDevice() orelse @panic("metal device couldn't be created");
-    const renderContext = try rive.gpu.RenderContextMetalImpl.makeContext(mtlDevice);
 
-    const file = try rive.File.import(riv, renderContext);
-    //
+    const window_props = try window.getProperties();
+    const ns_window: *objc.app_kit.Window = @ptrCast(window_props.cocoa_window.?.value.?);
 
-    const artboard = try file.artboardDefault();
+    //could I move this inside of metal impl?
+    const metal_view = sdl3.MetalView.init(window) orelse @panic("couldn't create metal view");
+    const metal_layer = metal_view.getLayer() orelse @panic("couldn't get metal layer");
 
-    //just for testing
-    const SMcount = artboard.stateMachineCount();
-    std.debug.print("state machine count: {d}\n", .{SMcount});
-
-    const stateMachine = try artboard.defaultStateMachine();
-
-    // bind default view model instance to artboard. if one exists
-
-    const vmi = file.createDefaultViewModelInstance(artboard);
-    if (vmi) |viewmodel| {
-        artboard.bindViewModelInstance(viewmodel);
-    }
-
-    const windowProps = try window.getProperties();
-    const nsWindow: *objc.app_kit.Window = @ptrCast(windowProps.cocoa_window.?.value.?);
-    // const nsView = nsWindow.*.contentView().?;
-    // nsView.setWantsLayer(true);
-
-    const width, const height = try window.getSize();
-    var renderTarget = try renderContext.makeRenderTargetMetal(@intCast(width), @intCast(height));
-    const queue = mtlDevice.newCommandQueue() orelse @panic("null");
-    const renderer = try renderContext.makeRenderer();
-
-    // renderContext.setMetalCommandQueue(queue);
-
-    const metalView = sdl3.MetalView.init(window);
-    const metalLayer = metalView.?.getLayer();
-    const swapchain: *objc.quartz_core.MetalLayer = @ptrCast(metalLayer);
-
-    swapchain.setDevice(mtlDevice);
-    swapchain.setPixelFormat(objc.metal.PixelFormatBGRA8Unorm);
-    swapchain.setDisplaySyncEnabled(true); //Vsync
-
-    // nsView.setLayer(@ptrCast(swapchain));
+    var metal_impl = try rive.MetalImpl.init(mtlDevice, metal_layer);
 
     //Render on a different thread to get around SDL's event polling freezing while live-resizing
 
-    const renderingThread = try std.Thread.spawn(.{}, riveRender, .{
-        swapchain,
-        queue,
-        &renderTarget,
-        nsWindow,
-        stateMachine,
-        renderContext,
-        renderer,
-        artboard,
+    const renderingThread = try std.Thread.spawn(.{}, riveThread, .{
+        ns_window,
+        &metal_impl,
     });
 
     //run loop
@@ -88,94 +46,68 @@ pub fn main() !void {
                 quit.store(true, .monotonic);
             },
             .mouse_button_down => {
-                stateMachine.pointerDown(event.mouse_button_down.x, event.mouse_button_down.y);
+                // stateMachine.pointerDown(event.mouse_button_down.x, event.mouse_button_down.y);
             },
             .mouse_button_up => {
-                stateMachine.pointerUp(event.mouse_button_up.x, event.mouse_button_up.y);
+                // stateMachine.pointerUp(event.mouse_button_up.x, event.mouse_button_up.y);
             },
-            .mouse_motion => {
-                stateMachine.pointerMove(event.mouse_motion.x, event.mouse_motion.y);
-            },
+            .mouse_motion => {},
             else => {},
         }
     }
     renderingThread.join();
-    renderer.free();
     window.deinit();
 }
 
-fn riveRender(
-    metalLayer: *objc.quartz_core.MetalLayer,
-    queue: *metal.CommandQueue,
-    target: *rive.gpu.RenderTargetMetal,
+fn riveThread(
     window: ?*objc.app_kit.Window,
-    sm: rive.StateMachineInstance,
-    renderContext: rive.gpu.RenderContext,
-    renderer: rive.RiveRenderer,
-    artboard: rive.artboard.ArtboardInstance,
+    metal_impl: *rive.MetalImpl,
 ) !void {
+    const riv = @embedFile("fuecoco.riv");
+    const file = try rive.File.import(riv, metal_impl.renderContext);
+
+    const artboard = try file.artboardDefault();
+
+    //just for testing
+    const SMcount = artboard.stateMachineCount();
+    std.debug.print("state machine count: {d}\n", .{SMcount});
+
+    const state_machine = try artboard.defaultStateMachine();
+
+    const renderer = try metal_impl.renderContext.makeRenderer();
+
+    // bind default view model instance to artboard. if one exists
+    if (file.createDefaultViewModelInstance(artboard)) |vmi| {
+        state_machine.bindViewModelInstance(vmi);
+    } else |err| {
+        std.debug.print("error getting view model from file :{} \n", .{err});
+    }
+
     var last_ticks = sdl3.timer.getMillisecondsSinceInit();
+    // number_write.setValue(10);
     while (!quit.load(.monotonic)) {
+        const pool = objc.objc.autoreleasePoolPush();
+        //calculate delta time
         const new_ticks = sdl3.timer.getMillisecondsSinceInit();
         const dt = new_ticks - last_ticks;
         last_ticks = new_ticks;
-        const pool = objc.objc.autoreleasePoolPush();
         const dtFloat: f32 = @floatFromInt(dt);
 
-        const currentFrameSurface = objc.quartz_core.MetalLayer.nextDrawable(metalLayer) orelse @panic("surface null");
-
+        //get pixel density from macos window backing for retina displays
         const pixelDensity: f32 = @floatCast(window.?.backingScaleFactor());
 
-        const width_d = currentFrameSurface.texture().width();
-        const height_d = currentFrameSurface.texture().height();
-        const width_f: f32 = @floatFromInt(width_d);
-        const height_f: f32 = @floatFromInt(height_d);
+        const width_f, const height_f = try metal_impl.beginFrame();
 
+        //set artboard width and height to match rener target size
         artboard.setWidth(width_f / pixelDensity);
         artboard.setHeight(height_f / pixelDensity);
 
-        if (target.width() != width_d or target.height() != height_d) {
-            //window size has changed
-            //NOTE: this seems to cause a slight memory leak when resizing window, it's unclear why.
-
-            // const pool2 = objc.objc.autoreleasePoolPush();
-            target.* = try renderContext.makeRenderTargetMetal(@intCast(width_d), @intCast(height_d));
-            // objc.objc.autoreleasePoolPop(pool2);
-        }
-        // defer target.deinit();
-        target.setTargetTexture(currentFrameSurface.texture());
-
-        renderContext.beginFrame(.{
-            .render_target_width = @intCast(width_d),
-            .render_target_height = @intCast(height_d),
-            .clear_color = 0xffffff,
-        });
-
         renderer.save();
         renderer.DPIScale(pixelDensity);
-        sm.advanceAndApply(dtFloat / 1000);
-        sm.draw(renderer);
+        state_machine.advanceAndApply(dtFloat / 1000); // this is where trigger callbacks get called
+        state_machine.draw(renderer);
         renderer.restore();
-
-        const flushCommandBuffer = queue.commandBuffer().?;
-
-        renderContext.flush(.{
-            .render_target = target.value,
-            .external_command_buffer = flushCommandBuffer,
-        });
-
-        flushCommandBuffer.commit();
-
-        const presentCommandBuffer = queue.commandBuffer().?;
-        presentCommandBuffer.presentDrawable(@ptrCast(currentFrameSurface));
-        presentCommandBuffer.commit();
-        target.setTargetTexture(null);
-        presentCommandBuffer.waitUntilCompleted();
-
-        //prob delete these
-        // currentFrameSurface.release();
-        // flushCommandBuffer.release();
-        // presentCommandBuffer.release();
+        try metal_impl.endFrame();
         objc.objc.autoreleasePoolPop(pool);
     }
 }

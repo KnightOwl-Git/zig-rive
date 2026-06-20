@@ -7,7 +7,8 @@ pub const artboard = @import("Artboard.zig");
 pub const StateMachineInstance = @import("StateMachineInstance.zig");
 const c = @import("c");
 const errors = @import("errors.zig");
-pub const data_binding = @import("data_binding.zig");
+pub const ViewModelInstance = @import("ViewModelInstance.zig");
 
 pub const RiveRenderer = @import("RiveRenderer.zig");
+pub const MetalImpl = @import("implementations/metal.zig");
 //TODO:: Categorize this better?

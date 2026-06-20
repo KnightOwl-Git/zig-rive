@@ -12,7 +12,7 @@ pub inline fn advanceAndApply(self: @This(), secs: f32) void {
 pub inline fn draw(self: @This(), renderer: RiveRenderer) void {
     c.rive_SMIdraw(self.value, renderer.value);
 }
-pub inline fn bindViewModelInstance(self: @This(), vmi: rive.data_binding.ViewModelInstance) void {
+pub inline fn bindViewModelInstance(self: @This(), vmi: rive.ViewModelInstance) void {
     c.rive_stateMachineBindViewModelInstance(self.value, vmi.value);
 }
 

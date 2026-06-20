@@ -25,6 +25,12 @@ pub fn build(b: *std.Build) void {
     const c_mod = translate_c.createModule();
     c_mod.addCSourceFile(.{ .file = b.path("src/c-api/riveWrapper.cpp") });
     c_mod.addCSourceFile(.{ .file = b.path("src/c-api/metalsetup.mm") });
+    c_mod.addCMacro("WITH_RIVE_TOOLS", "1");
+
+    const objc = b.dependency("mach_objc", .{
+        .target = target,
+        .optimize = optimize,
+    });
 
     const rive = b.addModule("zig_rive", .{
         .root_source_file = b.path("src/rive.zig"),
@@ -34,6 +40,7 @@ pub fn build(b: *std.Build) void {
         .link_libcpp = true,
         .imports = &.{
             .{ .name = "c", .module = c_mod },
+            .{ .name = "objc", .module = objc.module("mach-objc") },
         }, //eventually put this in mod and import mod instead
     });
 
@@ -48,11 +55,6 @@ pub fn build(b: *std.Build) void {
     });
 
     //platform specific
-
-    const objc = b.dependency("mach_objc", .{
-        .target = target,
-        .optimize = optimize,
-    });
 
     const example = b.addModule("sdl_rive_example", .{
         .target = target,
@@ -85,7 +87,7 @@ pub fn build(b: *std.Build) void {
     c_mod.linkLibrary(riveRenderer_lib);
     c_mod.linkFramework("Metal", .{});
     c_mod.linkFramework("Foundation", .{});
-    const lib = b.addLibrary(.{ .name = "riveZig", .root_module = rive });
+    const lib = b.addLibrary(.{ .name = "riveZig", .root_module = c_mod });
 
     targets.append(b.allocator, lib) catch @panic("OOM");
 

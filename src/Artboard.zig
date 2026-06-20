@@ -23,7 +23,7 @@ pub const ArtboardInstance = struct {
     pub inline fn setHeight(self: ArtboardInstance, height: f32) void {
         c.rive_artboardSetHeight(self.value, height);
     }
-    pub inline fn bindViewModelInstance(self: ArtboardInstance, vmi: rive.data_binding.ViewModelInstance) void {
+    pub inline fn bindViewModelInstance(self: ArtboardInstance, vmi: rive.ViewModelInstance) void {
         c.rive_artboardBindViewModelInstance(self.value, vmi.value);
     }
 };
