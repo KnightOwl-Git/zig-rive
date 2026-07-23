@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     //TODO: add more rive options
-    const cpp_linkage = b.option(std.builtin.LinkMode, "cppLinkage", "whether Rive should be linked as a dynamic or static library");
+    const cpp_linkage = b.option(std.builtin.LinkMode, "cpp_linkage", "whether Rive should be linked as a dynamic or static library");
 
     const build_example = b.option(bool, "buildExample", "Whether or not to build example app");
 
