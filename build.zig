@@ -12,9 +12,15 @@ pub fn build(b: *std.Build) void {
 
     const optimize = b.standardOptimizeOption(.{});
 
+    //TODO: add more rive options
+    const cpp_linkage = b.option(std.builtin.LinkMode, "cppLinkage", "whether Rive should be linked as a dynamic or static library");
+
+    const build_example = b.option(bool, "buildExample", "Whether or not to build example app");
+
     const rive_dep = b.dependency("rive", .{
         .target = target,
-        .optimize = optimize,
+        .optimize = std.builtin.OptimizeMode.ReleaseSmall,
+        .linkage = cpp_linkage,
     });
 
     const translate_c = b.addTranslateC(.{
@@ -23,11 +29,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     const c_mod = translate_c.createModule();
+
     c_mod.addCSourceFile(.{ .file = b.path("src/c-api/riveWrapper.cpp") });
     c_mod.addCSourceFile(.{ .file = b.path("src/c-api/metalsetup.mm") });
     c_mod.addCMacro("WITH_RIVE_TOOLS", "1");
 
-    const objc = b.dependency("mach_objc", .{
+    const objc = b.lazyDependency("mach_objc", .{
         .target = target,
         .optimize = optimize,
     });
@@ -40,7 +47,7 @@ pub fn build(b: *std.Build) void {
         .link_libcpp = true,
         .imports = &.{
             .{ .name = "c", .module = c_mod },
-            .{ .name = "objc", .module = objc.module("mach-objc") },
+            .{ .name = "objc", .module = objc.?.module("mach-objc") },
         }, //eventually put this in mod and import mod instead
     });
 
@@ -49,42 +56,9 @@ pub fn build(b: *std.Build) void {
         .root_module = rive,
     });
 
-    const sdl3 = b.dependency("sdl3", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
-    //platform specific
-
-    const example = b.addModule("sdl_rive_example", .{
-        .target = target,
-        .optimize = optimize,
-        .root_source_file = b.path("src/example/main.zig"),
-        .imports = &.{
-            // .{ .name = "rive", .module = mod },
-            .{ .name = "sdl3", .module = sdl3.module("sdl3") },
-            .{ .name = "c", .module = c_mod }, //eventually put this in mod and import mod instead
-            .{ .name = "rive", .module = rive },
-            .{ .name = "objc", .module = objc.module("mach-objc") },
-        },
-    });
-
-    const exe = b.addExecutable(.{
-        .name = "Rive SDL Example",
-        .root_module = example,
-    });
-    b.installArtifact(exe);
-
     const rive_cpp_lib = rive_dep.artifact("rive");
-    const riveRenderer_lib = rive_dep.artifact("rive_renderer");
-    // targets.append(b.allocator, riveLib) catch @panic("OOM");
-    // targets.append(b.allocator, riveRendererLib) catch @panic("OOM");
 
-    rive.linkLibrary(rive_cpp_lib);
-    // mod.linkFramework("Metal", .{});
-    rive.linkLibrary(riveRenderer_lib);
     c_mod.linkLibrary(rive_cpp_lib);
-    c_mod.linkLibrary(riveRenderer_lib);
     c_mod.linkFramework("Metal", .{});
     c_mod.linkFramework("Foundation", .{});
     const lib = b.addLibrary(.{ .name = "riveZig", .root_module = c_mod });
@@ -94,17 +68,53 @@ pub fn build(b: *std.Build) void {
     //step for generating compile commands
     _ = zcc.createStep(b, "cdb", targets.toOwnedSlice(b.allocator) catch @panic("OOM"));
 
-    //add run step
-    const run_exe = b.addRunArtifact(exe);
+    var should_build_example = true;
 
-    const run = b.step("run", "run sdl3 example");
-    run.dependOn(&run_exe.step);
+    if (build_example) |option| {
+        if (!option) {
+            should_build_example = false;
+        }
+    }
 
-    //ZLS check step for build-on-save errors
-    const exe_check = b.addExecutable(.{
-        .name = "foo",
-        .root_module = example,
-    });
+    if (should_build_example) {
+        const sdl3 = b.lazyDependency("sdl3", .{
+            .target = target,
+            .optimize = optimize,
+        });
+        //platform specific
+
+        const example = b.addModule("sdl_rive_example", .{
+            .target = target,
+            .optimize = optimize,
+            .root_source_file = b.path("src/example/main.zig"),
+            .imports = &.{
+                // .{ .name = "rive", .module = mod },
+                .{ .name = "sdl3", .module = sdl3.?.module("sdl3") },
+                .{ .name = "c", .module = c_mod }, //eventually put this in mod and import mod instead
+                .{ .name = "rive", .module = rive },
+                .{ .name = "objc", .module = objc.?.module("mach-objc") },
+            },
+        });
+
+        const exe = b.addExecutable(.{
+            .name = "Rive SDL Example",
+            .root_module = example,
+        });
+        b.installArtifact(exe);
+        //add run step
+        const run_exe = b.addRunArtifact(exe);
+
+        const run = b.step("run", "run sdl3 example");
+        run.dependOn(&run_exe.step);
+
+        //ZLS check step for build-on-save errors
+        const exe_check = b.addExecutable(.{
+            .name = "foo",
+            .root_module = example,
+        });
+        const check = b.step("check", "Check if foo compiles");
+        check.dependOn(&exe_check.step);
+    }
 
     //generate documentation
 
@@ -117,7 +127,4 @@ pub fn build(b: *std.Build) void {
     const docs_step = b.step("docs", "Generate documentation for Zig-Rive");
 
     docs_step.dependOn(&install_docs.step);
-
-    const check = b.step("check", "Check if foo compiles");
-    check.dependOn(&exe_check.step);
 }
