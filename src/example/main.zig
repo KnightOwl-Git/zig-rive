@@ -63,7 +63,7 @@ fn riveThread(
     window: ?*objc.app_kit.Window,
     metal_impl: *rive.MetalImpl,
 ) !void {
-    const riv = @embedFile("lp_level_editor.riv");
+    const riv = @embedFile("databinding_testing.riv");
     const file = try rive.File.import(riv, metal_impl.renderContext);
 
     const artboard = try file.artboardDefault();
@@ -77,11 +77,11 @@ fn riveThread(
     const renderer = try metal_impl.renderContext.makeRenderer();
 
     // bind default view model instance to artboard. if one exists
-    if (file.createDefaultViewModelInstance(artboard)) |vmi| {
-        state_machine.bindViewModelInstance(vmi);
-    } else |err| {
-        std.debug.print("error getting view model from file :{} \n", .{err});
-    }
+    const vmi = try file.createDefaultViewModelInstance(artboard);
+    artboard.bindViewModelInstance(vmi);
+
+    const x_prop = try vmi.getNumber("x");
+    x_prop.setOnChangedCallback(&numberChange);
 
     var last_ticks = sdl3.timer.getMillisecondsSinceInit();
     // number_write.setValue(10);
@@ -110,4 +110,12 @@ fn riveThread(
         try metal_impl.endFrame();
         objc.objc.autoreleasePoolPop(pool);
     }
+}
+
+//view model property change callbacks must be defined like this. I'd like to improve upon this in the future to allow for uder-defined date
+
+pub fn numberChange(prop: *anyopaque, new_value: f32) callconv(.c) void {
+    _ = prop; // autofix
+    // _ = prop;
+    std.debug.print("new value: {d}\n", .{new_value});
 }

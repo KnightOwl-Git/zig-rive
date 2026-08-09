@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) void {
 
     const rive_dep = b.dependency("rive", .{
         .target = target,
-        .optimize = std.builtin.OptimizeMode.ReleaseSmall,
+        .optimize = std.builtin.OptimizeMode.Debug,
         .linkage = cpp_linkage,
     });
 
@@ -97,7 +97,7 @@ pub fn build(b: *std.Build) void {
         });
 
         const exe = b.addExecutable(.{
-            .name = "Rive SDL Example",
+            .name = "zig-rive",
             .root_module = example,
         });
         b.installArtifact(exe);

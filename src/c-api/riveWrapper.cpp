@@ -409,6 +409,14 @@ void rive_setVMINumberValue(Rive_VMI_Number *self, float value) {
   cpp_num->propertyValue(value);
 }
 
+void rive_VMINumberSetCallback(Rive_VMI_Number *self, void (*callback)()) {
+  auto *cpp_number = reinterpret_cast<rive::ViewModelInstanceNumber *>(self);
+  auto *cpp_callback = reinterpret_cast<rive::ViewModelNumberChanged>(callback);
+
+  cpp_number->onChanged(cpp_callback);
+
+}
+
 uint32_t rive_getVMIColorValue(Rive_VMI_Color *self) {
   auto *cpp_color = reinterpret_cast<rive::ViewModelInstanceColor *>(self);
   return cpp_color->propertyValue();
@@ -419,6 +427,14 @@ void rive_setVMIColorValue(Rive_VMI_Color *self, uint32_t value) {
   cpp_color->propertyValue(value);
 }
 
+void rive_VMIColorSetCallback(Rive_VMI_Color *self, void (*callback)()) {
+  auto *cpp_color = reinterpret_cast<rive::ViewModelInstanceColor *>(self);
+  auto *cpp_callback = reinterpret_cast<rive::ViewModelColorChanged>(callback);
+
+  cpp_color->onChanged(cpp_callback);
+
+}
+
 uint32_t rive_getVMIEnumValue(Rive_VMI_Enum *self) {
   auto *cpp_enum = reinterpret_cast<rive::ViewModelInstanceEnum *>(self);
   return cpp_enum->propertyValue();
@@ -427,6 +443,14 @@ uint32_t rive_getVMIEnumValue(Rive_VMI_Enum *self) {
 void rive_setVMIEnumValue(Rive_VMI_Enum *self, uint32_t value) {
   auto *cpp_enum = reinterpret_cast<rive::ViewModelInstanceEnum *>(self);
   cpp_enum->propertyValue(value);
+}
+
+void rive_VMIEnumSetCallback(Rive_VMI_Enum *self, void (*callback)()) {
+  auto *cpp_enum = reinterpret_cast<rive::ViewModelInstanceEnum *>(self);
+  auto *cpp_callback = reinterpret_cast<rive::ViewModelEnumChanged>(callback);
+
+  cpp_enum->onChanged(cpp_callback);
+
 }
 Rive_VMI_ListItem* rive_getVMIListItem(Rive_VMI_List *self, uint32_t index) {
   auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
@@ -461,6 +485,13 @@ Rive_VMI_ListItem* rive_VMIListPop(Rive_VMI_List *self) {
   return reinterpret_cast<Rive_VMI_ListItem*>(cpp_list->pop().release());
 
 }
+void rive_VMIListSetCallback(Rive_VMI_List *self, void (*callback)()) {
+  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
+  auto *cpp_callback = reinterpret_cast<rive::ViewModelListChanged>(callback);
+
+  cpp_list->onChanged(cpp_callback);
+
+}
 
 bool rive_getVMIBooleanValue(Rive_VMI_Boolean *self) {
   auto *cpp_bool = reinterpret_cast<rive::ViewModelInstanceBoolean *>(self);
@@ -470,6 +501,14 @@ bool rive_getVMIBooleanValue(Rive_VMI_Boolean *self) {
 void rive_setVMIBooleanValue(Rive_VMI_Boolean *self, bool value) {
   auto *cpp_bool = reinterpret_cast<rive::ViewModelInstanceBoolean *>(self);
   cpp_bool->propertyValue(value);
+}
+
+void rive_VMIBooleanSetCallback(Rive_VMI_Boolean *self, void (*callback)()) {
+  auto *cpp_bool = reinterpret_cast<rive::ViewModelInstanceBoolean *>(self);
+  auto *cpp_callback = reinterpret_cast<rive::ViewModelBooleanChanged>(callback);
+
+  cpp_bool->onChanged(cpp_callback);
+
 }
 
 uint32_t rive_getVMITriggerValue(Rive_VMI_Trigger *self) {

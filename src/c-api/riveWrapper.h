@@ -165,12 +165,20 @@ Rive_VMI_List *rive_getVMIList(Rive_ViewModelInstance *self, const char *name);
 
 float rive_getVMINumberValue(Rive_VMI_Number *self);
 void rive_setVMINumberValue(Rive_VMI_Number *self, float value);
+void rive_VMINumberSetCallback(Rive_VMI_Number *self, void (*callback)());
+
 bool rive_getVMIBooleanValue(Rive_VMI_Boolean *self);
 void rive_setVMIBooleanValue(Rive_VMI_Boolean *self, bool value);
+void rive_VMIBooleanSetCallback(Rive_VMI_Boolean *self, void (*callback)());
+
 uint32_t rive_getVMIColorValue(Rive_VMI_Color *self);
 void rive_setVMIColorValue(Rive_VMI_Color *self, uint32_t value);
+void rive_VMIColorSetCallback(Rive_VMI_Color *self, void (*callback)());
+
 uint32_t rive_getVMIEnumValue(Rive_VMI_Enum *self);
 void rive_setVMIEnumValue(Rive_VMI_Enum *self, uint32_t value);
+void rive_VMIEnumSetCallback(Rive_VMI_Enum *self, void (*callback)());
+
 uint32_t rive_getVMITriggerValue(Rive_VMI_Trigger *self);
 void rive_fireVMITrigger(Rive_VMI_Trigger *self);
 void rive_VMITriggerSetCallback(Rive_VMI_Trigger *self, void (*callback)());
@@ -182,6 +190,7 @@ void rive_VMIListRemoveAll(Rive_VMI_List *self);
 void rive_VMIListRemoveItemAt(Rive_VMI_List *self, int index);
 Rive_VMI_ListItem* rive_VMIListPop(Rive_VMI_List *self);
 void rive_VMIlistItemAddVMI(Rive_VMI_ListItem * self, Rive_ViewModelInstance *vmi);
+void rive_VMIListSetCallback(Rive_VMI_List *self, void (*callback)());
 
 
 #ifdef __cplusplus
