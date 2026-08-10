@@ -118,7 +118,7 @@ pub const Boolean = struct {
         return c.rive_getVMIBooleanValue(self.ref);
     }
     pub inline fn setValue(self: Boolean, value: bool) void {
-        return c.rive_setVMIBoolValue(self.ref, value);
+        return c.rive_setVMIBooleanValue(self.ref, value);
     }
     pub inline fn setOnChangedCallback(self: Boolean, new_callback: *const fn (ref_ptr: *anyopaque, new_value: bool) callconv(.c) void) !void {
         c.rive_VMIBooleanSetCallback(self.ref, @ptrCast(new_callback));
