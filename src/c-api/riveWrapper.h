@@ -166,6 +166,7 @@ Rive_VMI_List *rive_getVMIList(Rive_ViewModelInstance *self, const char *name);
 float rive_getVMINumberValue(Rive_VMI_Number *self);
 void rive_setVMINumberValue(Rive_VMI_Number *self, float value);
 void rive_VMINumberSetCallback(Rive_VMI_Number *self, void (*callback)());
+Rive_ViewModelInstance *rive_getVMIFromNumber(Rive_VMI_Number *self);
 
 bool rive_getVMIBooleanValue(Rive_VMI_Boolean *self);
 void rive_setVMIBooleanValue(Rive_VMI_Boolean *self, bool value);

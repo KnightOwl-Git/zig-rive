@@ -6,6 +6,7 @@ pub const gpu = @import("gpu.zig");
 pub const artboard = @import("Artboard.zig");
 pub const StateMachineInstance = @import("StateMachineInstance.zig");
 const c = @import("c");
+pub const rive_c = c;
 const errors = @import("errors.zig");
 pub const ViewModelInstance = @import("ViewModelInstance.zig");
 

@@ -328,6 +328,12 @@ Rive_VMI_Number *rive_getVMINumber(Rive_ViewModelInstance *self,
   }
 }
 
+Rive_ViewModelInstance *rive_getVMIFromNumber(Rive_VMI_Number *self) {
+  auto *cpp_number = reinterpret_cast<rive::ViewModelInstanceNumber*>(self);
+  auto *cpp_vmi = cpp_number->viewModelInstance();
+  return reinterpret_cast<Rive_ViewModelInstance*>(cpp_vmi);
+}
+
 Rive_VMI_Boolean *rive_getVMIBoolean(Rive_ViewModelInstance *self,
                                      const char *name) {
   auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
