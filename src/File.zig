@@ -3,7 +3,7 @@ const c = @import("c");
 const Factory = @import("Factory.zig");
 const std = @import("std");
 const errors = @import("errors.zig");
-const artboard = @import("Artboard.zig");
+const Artboard = @import("Artboard.zig");
 const rive = @import("rive.zig");
 
 value: *c.Rive_File,
@@ -32,25 +32,34 @@ pub fn import(data: [:0]const u8, factory: anytype) !@This() {
     return .{ .value = try errors.wrapNull(*c.Rive_File, ret) };
 }
 
-pub inline fn artboardDefault(self: @This()) !artboard.ArtboardInstance {
-    return .{ .value = try errors.wrapNull(
-        *c.Rive_ArtboardInstance,
-        c.rive_file_artboardDefault(self.value),
-    ) };
+pub inline fn artboardDefault(self: @This()) !Artboard {
+    const bindable = c.rive_file_getBindableArtboardDefault(self.value);
+    const instance = c.rive_bindableArtboardGetArtboard(bindable);
+    return .{
+        .bindable = try errors.wrapNull(*anyopaque, bindable),
+        .instance = try errors.wrapNull(*c.Rive_ArtboardInstance, instance),
+    };
 }
 
-pub inline fn createDefaultViewModelInstance(self: @This(), ab: rive.artboard.ArtboardInstance) !rive.ViewModelInstance {
-    const ret = c.rive_createDefaultViewModelInstanceFromArtboard(self.value, ab.value);
-    if (ret) |vmi| {
-        return .{ .value = vmi };
+pub inline fn artboardNamed(self: @This(), name: [:0]const u8) !Artboard {
+    const bindable = c.rive_file_getBindableArtboardNamed(self.value, name);
+    const instance = c.rive_bindableArtboardGetArtboard(bindable);
+    return .{
+        .bindable = try errors.wrapNull(*anyopaque, bindable),
+        .instance = try errors.wrapNull(*c.Rive_ArtboardInstance, instance),
+    };
+}
+
+pub inline fn defaultArtboardViewModel(self: @This(), ab: rive.Artboard) !rive.data_binding.ViewModel {
+    const ret = c.rive_defaultArtboardViewModel(self.value, @ptrCast(ab.bindable));
+    if (ret) |vm| {
+        return .{ .value = vm };
     } else {
-        return error.CouldNotCreateDefaultViewModelInstance;
+        return error.CreatingViewModelInstance;
     }
 }
 
-//
-
-pub inline fn createViewModelInstance(self: @This(), name: [:0]const u8) !rive.ViewModelInstance {
+pub inline fn createViewModelInstance(self: @This(), name: [:0]const u8) !rive.data_binding.ViewModelInstance {
     const ret = c.rive_createViewModelInstance(self.value, name);
     if (ret) |vmi| {
         return .{ .value = vmi };

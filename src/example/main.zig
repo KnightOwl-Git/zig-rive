@@ -77,10 +77,11 @@ fn riveThread(
     const renderer = try metal_impl.renderContext.makeRenderer();
 
     // bind default view model instance to artboard. if one exists
-    const vmi = try file.createDefaultViewModelInstance(artboard);
+    const vm = try file.defaultArtboardViewModel(artboard);
+    const vmi = vm.createDefaultInstance();
     artboard.bindViewModelInstance(vmi);
-
-    const x_prop = try vmi.getNumber("x");
+    //
+    const x_prop = try vmi.propertyNumber("x");
     x_prop.setOnChangedCallback(&numberChange);
 
     var last_ticks = sdl3.timer.getMillisecondsSinceInit();

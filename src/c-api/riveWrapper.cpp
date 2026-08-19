@@ -9,26 +9,25 @@
 #include "rive/renderer/render_target.hpp"
 #include "rive/renderer/rive_renderer.hpp"
 #include "rive/span.hpp"
+#include "rive/viewmodel/runtime/viewmodel_instance_artboard_runtime.hpp"
 #include "rive/viewmodel/runtime/viewmodel_instance_list_runtime.hpp"
+#include "rive/viewmodel/runtime/viewmodel_instance_number_runtime.hpp"
 #include "rive/viewmodel/runtime/viewmodel_instance_runtime.hpp"
 #include "rive/viewmodel/runtime/viewmodel_runtime.hpp"
 #include "rive/viewmodel/viewmodel_instance.hpp"
-#include "rive/viewmodel/viewmodel_instance_boolean.hpp"
 #include "rive/viewmodel/viewmodel_instance_color.hpp"
-#include "rive/viewmodel/viewmodel_instance_enum.hpp"
-#include "rive/viewmodel/viewmodel_instance_list.hpp"
-#include "rive/viewmodel/viewmodel_instance_list_item.hpp"
 #include "rive/viewmodel/viewmodel_instance_number.hpp"
 #include "rive/viewmodel/viewmodel_instance_trigger.hpp"
 #include "rive/viewmodel/viewmodel_instance_value.hpp"
 #include "utils/no_op_factory.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <sys/types.h>
+#include <xlocale/_stdio.h>
 
 #include "riveWrapper.h"
-
 
 struct Rive_File : public rive::File {
 
@@ -75,13 +74,23 @@ void rive_file_release(Rive_File *file) {
 }
 
 Rive_ArtboardInstance *rive_file_artboardDefault(Rive_File *file) {
-  if (!file)
-    return nullptr;
 
   rive::File *cpp_file = reinterpret_cast<rive::File *>(file);
   return reinterpret_cast<Rive_ArtboardInstance *>(
       cpp_file->artboardDefault().release());
 };
+
+void *rive_file_getBindableArtboardNamed(Rive_File *file, const char *name) {
+  rive::File *cpp_file = reinterpret_cast<rive::File *>(file);
+
+  return cpp_file->bindableArtboardNamed(name).release();
+}
+
+void *rive_file_getBindableArtboardDefault(Rive_File *file) {
+  rive::File *cpp_file = reinterpret_cast<rive::File *>(file);
+
+  return cpp_file->bindableArtboardDefault().release();
+}
 
 Rive_ViewModelRuntime *
 rive_defaultArtboardViewModel(Rive_File *file,
@@ -91,7 +100,8 @@ rive_defaultArtboardViewModel(Rive_File *file,
   return reinterpret_cast<Rive_ViewModelRuntime *>(
       cpp_file->defaultArtboardViewModel(cpp_artboard));
 }
-Rive_ViewModelInstance * rive_createViewModelInstance(Rive_File *file, const char *name) {
+Rive_ViewModelInstance *rive_createViewModelInstance(Rive_File *file,
+                                                     const char *name) {
   auto *cpp_file = reinterpret_cast<rive::File *>(file);
   auto vmi = cpp_file->createViewModelInstance(name);
   return reinterpret_cast<Rive_ViewModelInstance *>(vmi.release());
@@ -108,6 +118,14 @@ Rive_ViewModelInstance *rive_createDefaultViewModelInstanceFromArtboard(
   auto *cpp_file = reinterpret_cast<rive::File *>(self);
   return reinterpret_cast<Rive_ViewModelInstance *>(
       cpp_file->createDefaultViewModelInstance(cpp_artboard).release());
+}
+
+// rive::BindableArtboard
+
+Rive_ArtboardInstance *rive_bindableArtboardGetArtboard(void *bindable) {
+  auto *cpp_ab = reinterpret_cast<rive::BindableArtboard *>(bindable);
+
+  return reinterpret_cast<Rive_ArtboardInstance *>(cpp_ab->artboard());
 }
 
 // rive::ArtboardInstance
@@ -158,11 +176,10 @@ void rive_artboardSetHeight(Rive_ArtboardInstance *artboard, float height) {
 }
 
 void rive_artboardBindViewModelInstance(Rive_ArtboardInstance *artboard,
-                                        Rive_ViewModelInstance *vmi) {
+                                        Rive_ViewModelInstanceRuntime *vmi) {
   auto *cpp_artboard = reinterpret_cast<rive::ArtboardInstance *>(artboard);
-  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(vmi);
-  rive::rcp<rive::ViewModelInstance> cpp_vmi_rcp(cpp_vmi);
-  cpp_artboard->bindViewModelInstance(cpp_vmi_rcp);
+  auto cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi)->instance();
+  cpp_artboard->bindViewModelInstance(cpp_vmi);
 }
 
 // rive::stateMachineInstance
@@ -299,7 +316,6 @@ int rive_renderTargetGetHeight(void *target) {
 Rive_ViewModelInstanceRuntime *
 rive_createDefaultVMInstance(Rive_ViewModelRuntime *vm) {
   auto *cpp_vm = reinterpret_cast<rive::ViewModelRuntime *>(vm);
-  auto rcp = cpp_vm->createDefaultInstance();
   return reinterpret_cast<Rive_ViewModelInstanceRuntime *>(
       cpp_vm->createDefaultInstance().release());
 }
@@ -310,231 +326,551 @@ Rive_ViewModelInstance *
 rive_getViewModelInstance(Rive_ViewModelInstanceRuntime *vmi) {
   auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
   rive::rcp<rive::ViewModelInstanceRuntime> cpp_vmi_rcp(cpp_vmi);
+
   return reinterpret_cast<Rive_ViewModelInstance *>(
       cpp_vmi_rcp->instance().release());
 }
 
-// rive::viewModelInstance
-Rive_VMI_Number *rive_getVMINumber(Rive_ViewModelInstance *self,
-                                   const char *name) {
-  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
-  auto propValue = cpp_vmi->propertyValue(name);
-  if (propValue) {
-    auto vmiNumber = propValue->as<rive::ViewModelInstanceNumber>();
-    return reinterpret_cast<Rive_VMI_Number *>(vmiNumber);
+void *rive_VMIgetProperty(Rive_ViewModelInstanceRuntime *vmi,
+                          const char *path) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  return cpp_vmi->property(path);
+}
 
-  } else {
+// VIEW MODEL PROPERTY DATA TYPES
+
+// NUMBER
+void *rive_VMIgetPropertyNumber(Rive_ViewModelInstanceRuntime *vmi,
+                                const char *path) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  if (!cpp_vmi) {
     return nullptr;
   }
+  return cpp_vmi->propertyNumber(path);
 }
 
-Rive_ViewModelInstance *rive_getVMIFromNumber(Rive_VMI_Number *self) {
-  auto *cpp_number = reinterpret_cast<rive::ViewModelInstanceNumber*>(self);
-  auto *cpp_vmi = cpp_number->viewModelInstance();
-  return reinterpret_cast<Rive_ViewModelInstance*>(cpp_vmi);
+float rive_VMINumberGetValue(void *prop) {
+  auto *cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceNumberRuntime *>(prop);
+  return cpp_prop->value();
 }
 
-Rive_VMI_Boolean *rive_getVMIBoolean(Rive_ViewModelInstance *self,
-                                     const char *name) {
-  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
-  auto ret = cpp_vmi->propertyValue(name)->as<rive::ViewModelInstanceBoolean>();
-
-  return reinterpret_cast<Rive_VMI_Boolean *>(ret);
+void rive_VMINumberSetValue(void *prop, float new_value) {
+  auto *cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceNumberRuntime *>(prop);
+  cpp_prop->value(new_value);
+}
+void rive_VMINumberRegisterCallback(void *prop, void (*callback)()) {
+  auto cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceNumberRuntime *>(prop);
+  auto instance_value =
+      cpp_prop->viewModelInstanceValue()->as<rive::ViewModelInstanceNumber>();
+  auto cpp_callback = reinterpret_cast<rive::ViewModelNumberChanged>(callback);
+  instance_value->onChanged(cpp_callback);
 }
 
-Rive_VMI_Trigger *rive_getVMITrigger(Rive_ViewModelInstance *self,
-                                     const char *name) {
-  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
-  auto propValue = cpp_vmi->propertyValue(name);
-  if (propValue) {
+// BOOLEAN
 
-    auto ret = propValue->as<rive::ViewModelInstanceTrigger>();
-    return reinterpret_cast<Rive_VMI_Trigger *>(ret);
-  } else {
-    return nullptr;
-  }
-
+void *rive_VMIgetPropertyBoolean(Rive_ViewModelInstanceRuntime *vmi,
+                                 const char *path) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  return cpp_vmi->propertyBoolean(path);
 }
 
-Rive_VMI_Color *rive_getVMIColor(Rive_ViewModelInstance *self,
-                                 const char *name) {
-  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
-  auto propValue = cpp_vmi->propertyValue(name);
-  if (propValue) {
-    auto vmiColor = propValue->as<rive::ViewModelInstanceColor>();
-    return reinterpret_cast<Rive_VMI_Color *>(vmiColor);
-
-  } else {
-    return nullptr;
-  }
+bool rive_VMIBooleanGetValue(void *prop) {
+  auto *cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceBooleanRuntime *>(prop);
+  return cpp_prop->value();
 }
 
-Rive_VMI_Enum *rive_getVMIEnum(Rive_ViewModelInstance *self,
-                               const char *name) {
-  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
-  auto propValue = cpp_vmi->propertyValue(name);
-  if (propValue) {
-    auto vmiEnum = propValue->as<rive::ViewModelInstanceEnum>();
-    return reinterpret_cast<Rive_VMI_Enum *>(vmiEnum);
-
-  } else {
-    return nullptr;
-  }
+void rive_VMIBooleanSetValue(void *prop, bool new_value) {
+  auto *cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceBooleanRuntime *>(prop);
+  cpp_prop->value(new_value);
+}
+void rive_VMIBooleanRegisterCallback(void *prop, void (*callback)()) {
+  auto cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceBooleanRuntime *>(prop);
+  auto instance_value =
+      cpp_prop->viewModelInstanceValue()->as<rive::ViewModelInstanceBoolean>();
+  auto cpp_callback = reinterpret_cast<rive::ViewModelBooleanChanged>(callback);
+  instance_value->onChanged(cpp_callback);
 }
 
-Rive_VMI_List *rive_getVMIList(Rive_ViewModelInstance *self,
-                               const char *name) {
-  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
-  auto propValue = cpp_vmi->propertyValue(name);
-  if (propValue) {
-    auto vmiList = propValue->as<rive::ViewModelInstanceList>();
-    return reinterpret_cast<Rive_VMI_List *>(vmiList);
-
-  } else {
-    return nullptr;
-  }
+// STRING
+void *rive_VMIgetPropertyString(Rive_ViewModelInstanceRuntime *vmi,
+                                const char *path) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  return cpp_vmi->propertyString(path);
 }
 
-Rive_VMI_ListItem* rive_VMIlistItemInit(Rive_ViewModelInstance *self) {
-  rive::rcp<rive::ViewModelInstance> cpp_VMInstance(reinterpret_cast<rive::ViewModelInstance*>(self));
-  auto cpp_VMIListRCP = rive::make_rcp<rive::ViewModelInstanceListItem>();
-  cpp_VMIListRCP->viewModelInstance(cpp_VMInstance);
-  return reinterpret_cast<Rive_VMI_ListItem*>(cpp_VMIListRCP.release());
-
+const char *rive_VMIStringGetValue(void *prop) {
+  auto *cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceStringRuntime *>(prop);
+  return cpp_prop->value().c_str();
 }
 
-// View Model Property setters and getters
-
-float rive_getVMINumberValue(Rive_VMI_Number *self) {
-  auto *cpp_num = reinterpret_cast<rive::ViewModelInstanceNumber *>(self);
-  return cpp_num->propertyValue();
+void rive_VMIStringSetValue(void *prop, const char *new_value) {
+  auto *cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceStringRuntime *>(prop);
+  cpp_prop->value(new_value);
+}
+void rive_VMIStringRegisterCallback(void *prop, void (*callback)()) {
+  auto cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceStringRuntime *>(prop);
+  auto instance_value = cpp_prop->viewModelInstanceValue();
+  auto string_prop =
+      reinterpret_cast<rive::ViewModelInstanceString *>(instance_value);
+  auto cpp_callback = reinterpret_cast<rive::ViewModelStringChanged>(callback);
+  string_prop->onChanged(cpp_callback);
 }
 
-void rive_setVMINumberValue(Rive_VMI_Number *self, float value) {
-  auto *cpp_num = reinterpret_cast<rive::ViewModelInstanceNumber *>(self);
-  cpp_num->propertyValue(value);
+// COLOR
+
+void *rive_VMIgetPropertyColor(Rive_ViewModelInstanceRuntime *vmi,
+                               const char *path) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  return cpp_vmi->propertyColor(path);
 }
 
-void rive_VMINumberSetCallback(Rive_VMI_Number *self, void (*callback)()) {
-  auto *cpp_number = reinterpret_cast<rive::ViewModelInstanceNumber *>(self);
-  auto *cpp_callback = reinterpret_cast<rive::ViewModelNumberChanged>(callback);
-
-  cpp_number->onChanged(cpp_callback);
-
+int rive_VMIColorGetValue(void *prop) {
+  auto *cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceColorRuntime *>(prop);
+  return cpp_prop->value();
 }
 
-uint32_t rive_getVMIColorValue(Rive_VMI_Color *self) {
-  auto *cpp_color = reinterpret_cast<rive::ViewModelInstanceColor *>(self);
-  return cpp_color->propertyValue();
+void rive_VMIColorSetValue(void *prop, int new_value) {
+  auto *cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceColorRuntime *>(prop);
+  cpp_prop->value(new_value);
+}
+void rive_VMIColorRegisterCallback(void *prop, void (*callback)()) {
+  auto cpp_prop = reinterpret_cast<rive::ViewModelInstanceColorRuntime *>(prop);
+  auto instance_value = cpp_prop->viewModelInstanceValue();
+  auto color_prop =
+      reinterpret_cast<rive::ViewModelInstanceColor *>(instance_value);
+  auto cpp_callback = reinterpret_cast<rive::ViewModelColorChanged>(callback);
+  color_prop->onChanged(cpp_callback);
 }
 
-void rive_setVMIColorValue(Rive_VMI_Color *self, uint32_t value) {
-  auto *cpp_color = reinterpret_cast<rive::ViewModelInstanceColor *>(self);
-  cpp_color->propertyValue(value);
+// TRIGGER
+
+void *rive_VMIgetPropertyTrigger(Rive_ViewModelInstanceRuntime *vmi,
+                                 const char *path) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  return cpp_vmi->propertyTrigger(path);
 }
 
-void rive_VMIColorSetCallback(Rive_VMI_Color *self, void (*callback)()) {
-  auto *cpp_color = reinterpret_cast<rive::ViewModelInstanceColor *>(self);
-  auto *cpp_callback = reinterpret_cast<rive::ViewModelColorChanged>(callback);
-
-  cpp_color->onChanged(cpp_callback);
-
+void rive_VMITriggerTrigger(void *prop) {
+  auto *cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceTriggerRuntime *>(prop);
+  cpp_prop->trigger();
 }
 
-uint32_t rive_getVMIEnumValue(Rive_VMI_Enum *self) {
-  auto *cpp_enum = reinterpret_cast<rive::ViewModelInstanceEnum *>(self);
-  return cpp_enum->propertyValue();
+void rive_VMITriggerRegisterCallback(void *prop, void (*callback)()) {
+  auto cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceTriggerRuntime *>(prop);
+  auto instance_value =
+      cpp_prop->viewModelInstanceValue()->as<rive::ViewModelInstanceTrigger>();
+  auto cpp_callback = reinterpret_cast<rive::ViewModelTriggerChanged>(callback);
+  instance_value->onChanged(cpp_callback);
 }
 
-void rive_setVMIEnumValue(Rive_VMI_Enum *self, uint32_t value) {
-  auto *cpp_enum = reinterpret_cast<rive::ViewModelInstanceEnum *>(self);
-  cpp_enum->propertyValue(value);
+// ARTBOARD
+void *rive_VMIgetPropertyArtboard(Rive_ViewModelInstanceRuntime *vmi,
+                                  const char *path) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  return cpp_vmi->propertyArtboard(path);
 }
 
-void rive_VMIEnumSetCallback(Rive_VMI_Enum *self, void (*callback)()) {
-  auto *cpp_enum = reinterpret_cast<rive::ViewModelInstanceEnum *>(self);
-  auto *cpp_callback = reinterpret_cast<rive::ViewModelEnumChanged>(callback);
-
-  cpp_enum->onChanged(cpp_callback);
-
-}
-Rive_VMI_ListItem* rive_getVMIListItem(Rive_VMI_List *self, uint32_t index) {
-  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
-  return reinterpret_cast<Rive_VMI_ListItem*>(cpp_list->item(index).release());
-}
-void rive_VMIListAddItem(Rive_VMI_List *self, Rive_VMI_ListItem* item) {
-  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
-  rive::rcp<rive::ViewModelInstanceListItem> cpp_item(reinterpret_cast<rive::ViewModelInstanceListItem * >(item));
-  cpp_list->addItem(cpp_item);
-
-}
-void rive_VMIListAddItemAt(Rive_VMI_List *self, Rive_VMI_ListItem* item, int index) {
-  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
-  rive::rcp<rive::ViewModelInstanceListItem> cpp_item(reinterpret_cast<rive::ViewModelInstanceListItem * >(item));
-  cpp_list->addItemAt(cpp_item, index);
-
-}
-void rive_VMIListRemoveAll(Rive_VMI_List *self) {
-  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
-  cpp_list->removeAllItems();
-
+const char *rive_VMIArtboardGetName(void *prop) {
+  auto cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceArtboardRuntime *>(prop);
+  return cpp_prop->artboardName().c_str();
 }
 
-void rive_VMIListRemoveItemAt(Rive_VMI_List *self, int index) {
-  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
-  cpp_list->removeItem(index);
+void rive_VMIArtboardSetValue(void *prop, void *new_value) {
+  auto cpp_prop =
+      reinterpret_cast<rive::ViewModelInstanceArtboardRuntime *>(prop);
+  rive::rcp<rive::BindableArtboard> cpp_ab_rcp(
+      reinterpret_cast<rive::BindableArtboard *>(new_value));
 
+  cpp_prop->value(cpp_ab_rcp);
 }
 
-Rive_VMI_ListItem* rive_VMIListPop(Rive_VMI_List *self) {
-  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
-  return reinterpret_cast<Rive_VMI_ListItem*>(cpp_list->pop().release());
+// ENUM
 
-}
-void rive_VMIListSetCallback(Rive_VMI_List *self, void (*callback)()) {
-  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
-  auto *cpp_callback = reinterpret_cast<rive::ViewModelListChanged>(callback);
-
-  cpp_list->onChanged(cpp_callback);
-
+void *rive_VMIgetPropertyEnum(Rive_ViewModelInstanceRuntime *vmi,
+                              const char *path) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  return cpp_vmi->propertyEnum(path);
 }
 
-bool rive_getVMIBooleanValue(Rive_VMI_Boolean *self) {
-  auto *cpp_bool = reinterpret_cast<rive::ViewModelInstanceBoolean *>(self);
-  return cpp_bool->propertyValue();
+const char *rive_VMIEnumGetValue(void *prop) {
+  auto *cpp_prop = reinterpret_cast<rive::ViewModelInstanceEnumRuntime *>(prop);
+  return cpp_prop->value().c_str();
 }
 
-void rive_setVMIBooleanValue(Rive_VMI_Boolean *self, bool value) {
-  auto *cpp_bool = reinterpret_cast<rive::ViewModelInstanceBoolean *>(self);
-  cpp_bool->propertyValue(value);
+void rive_VMIEnumSetValue(void *prop, const char *new_value) {
+  auto *cpp_prop = reinterpret_cast<rive::ViewModelInstanceEnumRuntime *>(prop);
+  cpp_prop->value(new_value);
 }
 
-void rive_VMIBooleanSetCallback(Rive_VMI_Boolean *self, void (*callback)()) {
-  auto *cpp_bool = reinterpret_cast<rive::ViewModelInstanceBoolean *>(self);
-  auto *cpp_callback = reinterpret_cast<rive::ViewModelBooleanChanged>(callback);
-
-  cpp_bool->onChanged(cpp_callback);
-
+int rive_VMIEnumGetValueIndex(void *prop) {
+  auto *cpp_prop = reinterpret_cast<rive::ViewModelInstanceEnumRuntime *>(prop);
+  return cpp_prop->valueIndex();
+}
+void rive_VMIEnumSetValueIndex(void *prop, int new_value) {
+  auto *cpp_prop = reinterpret_cast<rive::ViewModelInstanceEnumRuntime *>(prop);
+  cpp_prop->valueIndex(new_value);
 }
 
-uint32_t rive_getVMITriggerValue(Rive_VMI_Trigger *self) {
-  auto *cpp_trig = reinterpret_cast<rive::ViewModelInstanceTrigger *>(self);
-  return cpp_trig->propertyValue();
-}
-void rive_fireVMITrigger(Rive_VMI_Trigger *self) {
-  auto *cpp_trig = reinterpret_cast<rive::ViewModelInstanceTrigger *>(self);
-  cpp_trig->trigger();
+const char *rive_VMIEnumGetType(void *prop) {
+  auto *cpp_prop = reinterpret_cast<rive::ViewModelInstanceEnumRuntime *>(prop);
+  return cpp_prop->enumType().c_str();
 }
 
+// LIST
 
-void rive_VMITriggerSetCallback(Rive_VMI_Trigger *self, void (*callback)()) {
-  auto *cpp_trig = reinterpret_cast<rive::ViewModelInstanceTrigger *>(self);
-  auto *cpp_callback = reinterpret_cast<rive::ViewModelTriggerChanged>(callback);
-
-  cpp_trig->onChanged(cpp_callback);
-
+void *rive_VMIgetPropertyList(Rive_ViewModelInstanceRuntime *vmi,
+                              const char *path) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  return cpp_vmi->propertyList(path);
 }
 
+Rive_ViewModelInstanceRuntime *rive_VMIListGetInstanceAt(void *self,
+                                                         int index) {
+  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceListRuntime *>(self);
+  return reinterpret_cast<Rive_ViewModelInstanceRuntime *>(
+      cpp_list->instanceAt(index).release());
+}
+
+void rive_VMIListAddInstance(void *self,
+                             Rive_ViewModelInstanceRuntime *instance) {
+  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceListRuntime *>(self);
+  auto cpp_instance =
+      reinterpret_cast<rive::ViewModelInstanceRuntime *>(instance);
+  cpp_list->addInstance(cpp_instance);
+}
+
+void rive_VMIListAddInstanceAt(void *self,
+                               Rive_ViewModelInstanceRuntime *instance,
+                               int index) {
+  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceListRuntime *>(self);
+  auto cpp_instance =
+      reinterpret_cast<rive::ViewModelInstanceRuntime *>(instance);
+  cpp_list->addInstanceAt(cpp_instance, index);
+}
+
+void rive_VMIListRemoveInstance(void *self,
+                                Rive_ViewModelInstanceRuntime *instance) {
+  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceListRuntime *>(self);
+  auto cpp_instance =
+      reinterpret_cast<rive::ViewModelInstanceRuntime *>(instance);
+  cpp_list->removeInstance(cpp_instance);
+}
+
+void rive_VMIListRemoveInstanceAt(void *self, int index) {
+  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceListRuntime *>(self);
+  cpp_list->removeInstanceAt(index);
+}
+
+void rive_VMIListRemoveAll(void *self) {
+  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceListRuntime *>(self);
+  cpp_list->removeAllInstances();
+}
+
+void rive_VMIListSwap(void *self, int a, int b) {
+  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceListRuntime *>(self);
+  cpp_list->swap(a, b);
+}
+
+// NESTED VIEW MODEL
+
+Rive_ViewModelInstanceRuntime *
+rive_VMIgetPropertyViewModel(Rive_ViewModelInstanceRuntime *vmi,
+                             const char *path) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  return reinterpret_cast<Rive_ViewModelInstanceRuntime *>(
+      cpp_vmi->propertyViewModel(path).release());
+}
+
+// OLDER VERSION
+//
+//  // rive::viewModelInstance
+//  Rive_VMI_Number *rive_getVMINumber(Rive_ViewModelInstance *self,
+//                                     const char *name) {
+//    auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
+//    auto propValue = cpp_vmi->propertyValue(name);
+//    if (propValue) {
+//      auto vmiNumber = propValue->as<rive::ViewModelInstanceNumber>();
+//      return reinterpret_cast<Rive_VMI_Number *>(vmiNumber);
+//
+//    } else {
+//      return nullptr;
+//    }
+//  }
+//
+//  //TODO: See if I can make a generic get VMI property function
+//
+//  Rive_ViewModelInstance *rive_getVMIFromNumber(Rive_VMI_Number *self) {
+//    auto *cpp_number = reinterpret_cast<rive::ViewModelInstanceNumber*>(self);
+//    auto *cpp_vmi = cpp_number->viewModelInstance();
+//    return reinterpret_cast<Rive_ViewModelInstance*>(cpp_vmi);
+//  }
+//
+//  Rive_VMI_Boolean *rive_getVMIBoolean(Rive_ViewModelInstance *self,
+//                                       const char *name) {
+//    auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
+//    auto ret =
+//    cpp_vmi->propertyValue(name)->as<rive::ViewModelInstanceBoolean>();
+//
+//    return reinterpret_cast<Rive_VMI_Boolean *>(ret);
+//  }
+//
+//  Rive_VMI_Trigger *rive_getVMITrigger(Rive_ViewModelInstance *self,
+//                                       const char *name) {
+//    auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
+//    auto propValue = cpp_vmi->propertyValue(name);
+//    if (propValue) {
+//
+//      auto ret = propValue->as<rive::ViewModelInstanceTrigger>();
+//      return reinterpret_cast<Rive_VMI_Trigger *>(ret);
+//    } else {
+//      return nullptr;
+//    }
+//
+//  }
+//
+//  Rive_VMI_Color *rive_getVMIColor(Rive_ViewModelInstance *self,
+//                                   const char *name) {
+//    auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
+//    auto propValue = cpp_vmi->propertyValue(name);
+//    if (propValue) {
+//      auto vmiColor = propValue->as<rive::ViewModelInstanceColor>();
+//      return reinterpret_cast<Rive_VMI_Color *>(vmiColor);
+//
+//    } else {
+//      return nullptr;
+//    }
+//  }
+//
+//  Rive_VMI_Enum *rive_getVMIEnum(Rive_ViewModelInstance *self,
+//                                 const char *name) {
+//    auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
+//    auto propValue = cpp_vmi->propertyValue(name);
+//    if (propValue) {
+//      auto vmiEnum = propValue->as<rive::ViewModelInstanceEnum>();
+//      return reinterpret_cast<Rive_VMI_Enum *>(vmiEnum);
+//
+//    } else {
+//      return nullptr;
+//    }
+//  }
+//
+//  Rive_VMI_ViewModel *rive_getVMIViewModel(Rive_ViewModelInstance *self,
+//                                 const char *name) {
+//    auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
+//    auto propValue = cpp_vmi->propertyValue(name);
+//    if (propValue) {
+//      auto vmiViewModel = propValue->as<rive::ViewModelInstanceViewModel>();
+//      return reinterpret_cast<Rive_VMI_ViewModel
+//      *>(vmiViewModel->viewModelInstance());
+//
+//    } else {
+//      return nullptr;
+//    }
+//  }
+//
+//  Rive_VMI_List *rive_getVMIList(Rive_ViewModelInstance *self,
+//                                 const char *name) {
+//    auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(self);
+//    auto propValue = cpp_vmi->propertyValue(name);
+//    if (propValue) {
+//      auto vmiList = propValue->as<rive::ViewModelInstanceList>();
+//      return reinterpret_cast<Rive_VMI_List *>(vmiList);
+//
+//    } else {
+//      return nullptr;
+//    }
+//  }
+//
+//  Rive_VMI_ListItem* rive_VMIlistItemInit(Rive_ViewModelInstance *self) {
+//    rive::rcp<rive::ViewModelInstance>
+//    cpp_VMInstance(reinterpret_cast<rive::ViewModelInstance*>(self)); auto
+//    cpp_VMIListRCP = rive::make_rcp<rive::ViewModelInstanceListItem>();
+//    cpp_VMIListRCP->viewModelInstance(cpp_VMInstance);
+//    return reinterpret_cast<Rive_VMI_ListItem*>(cpp_VMIListRCP.release());
+//
+//  }
+
+// // View Model Property setters and getters
+//
+//
+// float rive_getVMINumberValue(Rive_VMI_Number *self) {
+//   auto *cpp_num = reinterpret_cast<rive::ViewModelInstanceNumber *>(self);
+//   return cpp_num->propertyValue();
+// }
+//
+// void rive_setVMINumberValue(Rive_VMI_Number *self, float value) {
+//   auto *cpp_num = reinterpret_cast<rive::ViewModelInstanceNumber *>(self);
+//   cpp_num->propertyValue(value);
+// }
+//
+// void rive_VMINumberSetCallback(Rive_VMI_Number *self, void (*callback)()) {
+//   auto *cpp_number = reinterpret_cast<rive::ViewModelInstanceNumber *>(self);
+//   auto *cpp_callback =
+//   reinterpret_cast<rive::ViewModelNumberChanged>(callback);
+//
+//   cpp_number->onChanged(cpp_callback);
+//
+// }
+//
+// uint32_t rive_getVMIColorValue(Rive_VMI_Color *self) {
+//   auto *cpp_color = reinterpret_cast<rive::ViewModelInstanceColor *>(self);
+//   return cpp_color->propertyValue();
+// }
+//
+// void rive_setVMIColorValue(Rive_VMI_Color *self, uint32_t value) {
+//   auto *cpp_color = reinterpret_cast<rive::ViewModelInstanceColor *>(self);
+//   cpp_color->propertyValue(value);
+// }
+//
+// void rive_VMIColorSetCallback(Rive_VMI_Color *self, void (*callback)()) {
+//   auto *cpp_color = reinterpret_cast<rive::ViewModelInstanceColor *>(self);
+//   auto *cpp_callback =
+//   reinterpret_cast<rive::ViewModelColorChanged>(callback);
+//
+//   cpp_color->onChanged(cpp_callback);
+//
+// }
+//
+// uint32_t rive_getVMIEnumValue(Rive_VMI_Enum *self) {
+//   auto *cpp_enum = reinterpret_cast<rive::ViewModelInstanceEnum *>(self);
+//   return cpp_enum->propertyValue();
+// }
+//
+// void rive_setVMIEnumValue(Rive_VMI_Enum *self, uint32_t value) {
+//   auto *cpp_enum = reinterpret_cast<rive::ViewModelInstanceEnum *>(self);
+//   cpp_enum->propertyValue(value);
+// }
+//
+// void rive_VMIEnumSetCallback(Rive_VMI_Enum *self, void (*callback)()) {
+//   auto *cpp_enum = reinterpret_cast<rive::ViewModelInstanceEnum *>(self);
+//   auto *cpp_callback =
+//   reinterpret_cast<rive::ViewModelEnumChanged>(callback);
+//
+//   cpp_enum->onChanged(cpp_callback);
+//
+// }
+// Rive_VMI_ListItem* rive_getVMIListItem(Rive_VMI_List *self, uint32_t index) {
+//   auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
+//   return
+//   reinterpret_cast<Rive_VMI_ListItem*>(cpp_list->item(index).release());
+// }
+// void rive_VMIListAddItem(Rive_VMI_List *self, Rive_VMI_ListItem* item) {
+//   auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
+//   rive::rcp<rive::ViewModelInstanceListItem>
+//   cpp_item(reinterpret_cast<rive::ViewModelInstanceListItem * >(item));
+//   cpp_list->addItem(cpp_item);
+//
+// }
+// void rive_VMIListAddItemAt(Rive_VMI_List *self, Rive_VMI_ListItem* item, int
+// index) {
+//   auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
+//   rive::rcp<rive::ViewModelInstanceListItem>
+//   cpp_item(reinterpret_cast<rive::ViewModelInstanceListItem * >(item));
+//   cpp_list->addItemAt(cpp_item, index);
+//
+// }
+// void rive_VMIListRemoveAll(Rive_VMI_List *self) {
+//   auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
+//
+//   //make rcp's for every list item so that they will go out of scope and be
+//   deleted
+//
+//   for (int i = 0; i < cpp_list->listItems().count(); i++) {
+//     delete cpp_list->item(i).release();
+//
+//   }
+//   cpp_list->removeAllItems();
+//
+// }
+//
+// void rive_VMIListRemoveItemAt(Rive_VMI_List *self, int index) {
+//   auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
+//   cpp_list->removeItem(index);
+//
+// }
+//
+// Rive_VMI_ListItem* rive_VMIListPop(Rive_VMI_List *self) {
+//   auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
+//   return reinterpret_cast<Rive_VMI_ListItem*>(cpp_list->pop().release());
+//
+// }
+// void rive_VMIListSetCallback(Rive_VMI_List *self, void (*callback)()) {
+//   auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceList *>(self);
+//   auto *cpp_callback =
+//   reinterpret_cast<rive::ViewModelListChanged>(callback);
+//
+//   cpp_list->onChanged(cpp_callback);
+//
+// }
+//
+// bool rive_getVMIBooleanValue(Rive_VMI_Boolean *self) {
+//   auto *cpp_bool = reinterpret_cast<rive::ViewModelInstanceBoolean *>(self);
+//   return cpp_bool->propertyValue();
+// }
+//
+// void rive_setVMIBooleanValue(Rive_VMI_Boolean *self, bool value) {
+//   auto *cpp_bool = reinterpret_cast<rive::ViewModelInstanceBoolean *>(self);
+//   cpp_bool->propertyValue(value);
+// }
+//
+// void rive_VMIBooleanSetCallback(Rive_VMI_Boolean *self, void (*callback)()) {
+//   auto *cpp_bool = reinterpret_cast<rive::ViewModelInstanceBoolean *>(self);
+//   auto *cpp_callback =
+//   reinterpret_cast<rive::ViewModelBooleanChanged>(callback);
+//
+//   cpp_bool->onChanged(cpp_callback);
+//
+// }
+//
+// uint32_t rive_getVMITriggerValue(Rive_VMI_Trigger *self) {
+//   auto *cpp_trig = reinterpret_cast<rive::ViewModelInstanceTrigger *>(self);
+//   return cpp_trig->propertyValue();
+// }
+// void rive_fireVMITrigger(Rive_VMI_Trigger *self) {
+//   auto *cpp_trig = reinterpret_cast<rive::ViewModelInstanceTrigger *>(self);
+//   cpp_trig->trigger();
+// }
+//
+//
+// void rive_VMITriggerSetCallback(Rive_VMI_Trigger *self, void (*callback)()) {
+//   auto *cpp_trig = reinterpret_cast<rive::ViewModelInstanceTrigger *>(self);
+//   auto *cpp_callback =
+//   reinterpret_cast<rive::ViewModelTriggerChanged>(callback);
+//
+//   cpp_trig->onChanged(cpp_callback);
+//
+// }
+//
+// Rive_ViewModelInstance * rive_getVMIViewModelInstance(Rive_VMI_ViewModel
+// *self) {
+//   auto *cpp_vm = reinterpret_cast<rive::ViewModelInstanceViewModel *>(self);
+//   return
+//   reinterpret_cast<Rive_ViewModelInstance*>(cpp_vm->referenceViewModelInstance().release());
+// }
+//
+// uint32_t rive_getVMIViewModelValue(Rive_VMI_ViewModel *self) {
+//   auto *cpp_vm = reinterpret_cast<rive::ViewModelInstanceViewModel *>(self);
+//   return cpp_vm->propertyValue();
+// }
+//
+// void rive_setVMIViewModelValue(Rive_VMI_ViewModel *self, uint32_t value) {
+//   auto *cpp_vm = reinterpret_cast<rive::ViewModelInstanceViewModel *>(self);
+//   cpp_vm->propertyValue(value);
+// }
 
 // TODO: figure out how to release
 

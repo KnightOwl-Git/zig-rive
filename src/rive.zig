@@ -3,12 +3,12 @@
 pub const File = @import("File.zig");
 pub const Factory = @import("Factory.zig");
 pub const gpu = @import("gpu.zig");
-pub const artboard = @import("Artboard.zig");
+pub const Artboard = @import("Artboard.zig");
 pub const StateMachineInstance = @import("StateMachineInstance.zig");
 const c = @import("c");
 pub const rive_c = c;
 const errors = @import("errors.zig");
-pub const ViewModelInstance = @import("ViewModelInstance.zig");
+pub const data_binding = @import("data_binding.zig");
 
 pub const RiveRenderer = @import("RiveRenderer.zig");
 pub const MetalImpl = @import("implementations/metal.zig");
