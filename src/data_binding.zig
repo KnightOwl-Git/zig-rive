@@ -108,6 +108,8 @@ pub const ViewModelInstance = struct {
 
     pub const Number = struct {
         ref: *anyopaque,
+        callback: *const fn (self: *Number, userData: ?*anyopaque) void = undefined,
+
         pub inline fn getValue(self: Number) f32 {
             return c.rive_VMINumberGetValue(self.ref);
         }
@@ -116,6 +118,14 @@ pub const ViewModelInstance = struct {
         }
         pub inline fn setOnChangedCallback(self: Number, new_callback: *const fn (ref_ptr: *anyopaque, value: f32) callconv(.c) void) void {
             c.rive_VMINumberRegisterCallback(self.ref, @ptrCast(new_callback));
+        }
+        pub fn registerCallback(self: *Number, callback: *const fn (self: *Number, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
+            self.callback = callback;
+            _ = c.rive_registerCallback(self.ref, self, user_data, &c_callback);
+        }
+        fn c_callback(self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void {
+            const number: *Number = @ptrCast(@alignCast(self));
+            number.callback(number, userData);
         }
     };
 

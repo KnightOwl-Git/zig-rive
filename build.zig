@@ -31,6 +31,7 @@ pub fn build(b: *std.Build) void {
     const c_mod = translate_c.createModule();
 
     c_mod.addCSourceFile(.{ .file = b.path("src/c-api/riveWrapper.cpp") });
+    c_mod.addCSourceFile(.{ .file = b.path("src/c-api/viewModelListener.cpp") });
     c_mod.addCSourceFile(.{ .file = b.path("src/c-api/metalsetup.mm") });
     c_mod.addCMacro("WITH_RIVE_TOOLS", "1");
 

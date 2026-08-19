@@ -225,12 +225,16 @@ void rive_VMIListRemoveInstance(void *self,
 void rive_VMIListRemoveInstanceAt(void *self, int index);
 void rive_VMIListRemoveAll(void *self);
 void rive_VMIListSwap(void *self, int a, int b);
+void* rive_registerCallback(void* instanceValueRuntime, void* zigProp, void* userData, void(*callback)(void*, void*));
 
 // NESTED VIEW MODEL
 
 Rive_ViewModelInstanceRuntime *
 rive_VMIgetPropertyViewModel(Rive_ViewModelInstanceRuntime *vmi,
                             const char *path);
+
+// temp until I have better callback system
+ Rive_ViewModelInstance *rive_getVMIFromNumber(void *self);
 
 // Old stuff
 

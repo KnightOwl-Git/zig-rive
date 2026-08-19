@@ -13,6 +13,7 @@
 #include "rive/viewmodel/runtime/viewmodel_instance_list_runtime.hpp"
 #include "rive/viewmodel/runtime/viewmodel_instance_number_runtime.hpp"
 #include "rive/viewmodel/runtime/viewmodel_instance_runtime.hpp"
+#include "rive/viewmodel/runtime/viewmodel_instance_value_runtime.hpp"
 #include "rive/viewmodel/runtime/viewmodel_runtime.hpp"
 #include "rive/viewmodel/viewmodel_instance.hpp"
 #include "rive/viewmodel/viewmodel_instance_color.hpp"
@@ -26,6 +27,7 @@
 #include <memory>
 #include <sys/types.h>
 #include <xlocale/_stdio.h>
+#include "viewModelListener.hpp"
 
 #include "riveWrapper.h"
 
@@ -489,11 +491,11 @@ void *rive_VMIgetPropertyArtboard(Rive_ViewModelInstanceRuntime *vmi,
   return cpp_vmi->propertyArtboard(path);
 }
 
-const char *rive_VMIArtboardGetName(void *prop) {
-  auto cpp_prop =
-      reinterpret_cast<rive::ViewModelInstanceArtboardRuntime *>(prop);
-  return cpp_prop->artboardName().c_str();
-}
+// const char *rive_VMIArtboardGetName(void *prop) {
+//   auto cpp_prop =
+//       reinterpret_cast<rive::ViewModelInstanceArtboardRuntime *>(prop);
+//   return cpp_prop->artboardName().c_str();
+// }
 
 void rive_VMIArtboardSetValue(void *prop, void *new_value) {
   auto cpp_prop =
@@ -512,10 +514,10 @@ void *rive_VMIgetPropertyEnum(Rive_ViewModelInstanceRuntime *vmi,
   return cpp_vmi->propertyEnum(path);
 }
 
-const char *rive_VMIEnumGetValue(void *prop) {
-  auto *cpp_prop = reinterpret_cast<rive::ViewModelInstanceEnumRuntime *>(prop);
-  return cpp_prop->value().c_str();
-}
+// const char *rive_VMIEnumGetValue(void *prop) {
+//   auto *cpp_prop = reinterpret_cast<rive::ViewModelInstanceEnumRuntime *>(prop);
+//   return cpp_prop->value().c_str();
+// }
 
 void rive_VMIEnumSetValue(void *prop, const char *new_value) {
   auto *cpp_prop = reinterpret_cast<rive::ViewModelInstanceEnumRuntime *>(prop);
@@ -531,10 +533,10 @@ void rive_VMIEnumSetValueIndex(void *prop, int new_value) {
   cpp_prop->valueIndex(new_value);
 }
 
-const char *rive_VMIEnumGetType(void *prop) {
-  auto *cpp_prop = reinterpret_cast<rive::ViewModelInstanceEnumRuntime *>(prop);
-  return cpp_prop->enumType().c_str();
-}
+// const char *rive_VMIEnumGetType(void *prop) {
+//   auto *cpp_prop = reinterpret_cast<rive::ViewModelInstanceEnumRuntime *>(prop);
+//   return cpp_prop->enumType().c_str();
+// }
 
 // LIST
 
@@ -601,6 +603,14 @@ rive_VMIgetPropertyViewModel(Rive_ViewModelInstanceRuntime *vmi,
       cpp_vmi->propertyViewModel(path).release());
 }
 
+void* rive_registerCallback(void* instanceValueRuntime, void* zigProp, void* userData, void(*callback)(void*, void*)) {
+
+	auto* cpp_instanceValue = reinterpret_cast<rive::ViewModelInstanceValueRuntime*>(instanceValueRuntime);
+	auto listener = new rive::ViewModelListener(cpp_instanceValue, zigProp, userData, callback);
+	return listener;
+}
+
+
 // OLDER VERSION
 //
 //  // rive::viewModelInstance
@@ -619,11 +629,20 @@ rive_VMIgetPropertyViewModel(Rive_ViewModelInstanceRuntime *vmi,
 //
 //  //TODO: See if I can make a generic get VMI property function
 //
-//  Rive_ViewModelInstance *rive_getVMIFromNumber(Rive_VMI_Number *self) {
-//    auto *cpp_number = reinterpret_cast<rive::ViewModelInstanceNumber*>(self);
-//    auto *cpp_vmi = cpp_number->viewModelInstance();
-//    return reinterpret_cast<Rive_ViewModelInstance*>(cpp_vmi);
-//  }
+ Rive_ViewModelInstance *rive_getVMIFromNumber(void *self) {
+   auto *cpp_number = reinterpret_cast<rive::ViewModelInstanceNumber*>(self);
+   auto *cpp_vmi = cpp_number->viewModelInstance();
+   return reinterpret_cast<Rive_ViewModelInstance*>(cpp_vmi);
+ }
+
+// Rive_ViewModelInstanceRuntime *rive_WrapInVMIRuntime(Rive_ViewModelInstance* vmi) {
+//   auto * cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(vmi);
+//   rive::rcp<rive::ViewModelInstance> vmi_rcp(cpp_vmi);
+//   rive::ViewModelInstanceRuntime runtime(vmi_rcp);
+//   rive::rcp<rive::ViewModelInstanceRuntime> runtime_rcp(runtime);
+//
+//   return reinterpret_cast<Rive_ViewModelInstanceRuntime>(runtime_rcp.release());
+// }
 //
 //  Rive_VMI_Boolean *rive_getVMIBoolean(Rive_ViewModelInstance *self,
 //                                       const char *name) {
