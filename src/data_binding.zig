@@ -109,10 +109,10 @@ pub const ViewModelInstance = struct {
     pub const Number = struct {
         ref: *anyopaque,
         pub inline fn getValue(self: Number) f32 {
-            return c.rive_getVMINumberValue(self.ref);
+            return c.rive_VMINumberGetValue(self.ref);
         }
         pub inline fn setValue(self: Number, value: f32) void {
-            return c.rive_setVMINumberValue(self.ref, value);
+            return c.rive_VMINumberSetValue(self.ref, value);
         }
         pub inline fn setOnChangedCallback(self: Number, new_callback: *const fn (ref_ptr: *anyopaque, value: f32) callconv(.c) void) void {
             c.rive_VMINumberRegisterCallback(self.ref, @ptrCast(new_callback));
@@ -122,10 +122,10 @@ pub const ViewModelInstance = struct {
     pub const Boolean = struct {
         ref: *anyopaque,
         pub inline fn getValue(self: Boolean) bool {
-            return c.rive_getVMIBooleanValue(self.ref);
+            return c.rive_VMIBooleanGetValue(self.ref);
         }
         pub inline fn setValue(self: Boolean, value: bool) void {
-            return c.rive_setVMIBooleanValue(self.ref, value);
+            return c.rive_VMIBooleanSetValue(self.ref, value);
         }
         pub inline fn setOnChangedCallback(self: Boolean, new_callback: *const fn (ref_ptr: *anyopaque, new_value: bool) callconv(.c) void) !void {
             c.rive_VMIBooleanRegisterCallback(self.ref, @ptrCast(new_callback));
@@ -135,11 +135,8 @@ pub const ViewModelInstance = struct {
     pub const Trigger = struct {
         ref: *c.Rive_VMI_Trigger,
 
-        pub inline fn getValue(self: Trigger) u32 {
-            return c.rive_getVMITriggerValue(self.ref);
-        }
         pub inline fn trigger(self: Trigger) void {
-            return c.rive_fireVMITrigger(self.ref);
+            return c.rive_VMITriggerTrigger(self.ref);
         }
         pub inline fn setOnChangedCallback(self: Trigger, new_callback: *const fn (ref_ptr: *anyopaque, value: u32) callconv(.c) void) !void {
             c.rive_VMITriggerSetCallback(self.ref, @ptrCast(new_callback));
@@ -220,10 +217,10 @@ pub const ViewModelInstance = struct {
             }
         }
         pub inline fn addInstance(self: List, instance: ViewModelInstance) void {
-            c.rive_VMIListAddInstance(self.ref, instance.ref);
+            c.rive_VMIListAddInstance(self.ref, instance.value);
         }
         pub inline fn addInstanceAt(self: List, instance: ViewModelInstance, index: c_int) void {
-            c.rive_VMIListAddInstanceAt(self.ref, instance.ref, index);
+            c.rive_VMIListAddInstanceAt(self.ref, instance.value, index);
         }
         pub inline fn removeAll(self: List) void {
             c.rive_VMIListRemoveAll(self.ref);
@@ -232,7 +229,7 @@ pub const ViewModelInstance = struct {
             c.rive_VMIListRemoveInstanceAt(self.ref, index);
         }
         pub inline fn removeInstance(self: List, instance: ViewModelInstance) void {
-            c.rive_VMIListRemoveInstanceAt(self.ref, instance);
+            c.rive_VMIListRemoveInstanceAt(self.ref, instance.value);
         }
         pub inline fn swap(self: List, instance: ViewModelInstance) void {
             c.rive_VMIListSwap(self.ref, instance);

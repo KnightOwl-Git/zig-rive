@@ -100,11 +100,17 @@ rive_defaultArtboardViewModel(Rive_File *file,
   return reinterpret_cast<Rive_ViewModelRuntime *>(
       cpp_file->defaultArtboardViewModel(cpp_artboard));
 }
-Rive_ViewModelInstance *rive_createViewModelInstance(Rive_File *file,
+// Rive_ViewModelInstance *rive_createViewModelInstance(Rive_File *file,
+//                                                      const char *name) {
+//   auto *cpp_file = reinterpret_cast<rive::File *>(file);
+//   auto vmi = cpp_file->createViewModelInstance(name);
+//   return reinterpret_cast<Rive_ViewModelInstance *>(vmi.release());
+// }
+Rive_ViewModelRuntime *rive_FileGetViewModelByName(Rive_File *file,
                                                      const char *name) {
+
   auto *cpp_file = reinterpret_cast<rive::File *>(file);
-  auto vmi = cpp_file->createViewModelInstance(name);
-  return reinterpret_cast<Rive_ViewModelInstance *>(vmi.release());
+  return reinterpret_cast<Rive_ViewModelRuntime *>(cpp_file->viewModelByName(name));
 }
 
 // headless factory for testing
@@ -199,12 +205,12 @@ void rive_SMIdraw(Rive_StateMachineInstance *sm, Rive_RiveRenderer *renderer) {
     cpp_smi->draw(cpp_renderer);
   }
 }
+
 void rive_stateMachineBindViewModelInstance(Rive_StateMachineInstance *smi,
-                                            Rive_ViewModelInstance *vmi) {
+                                            Rive_ViewModelInstanceRuntime *vmi) {
   auto *cpp_smi = reinterpret_cast<rive::StateMachineInstance *>(smi);
-  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstance *>(vmi);
-  rive::rcp<rive::ViewModelInstance> cpp_vmi_rcp(cpp_vmi);
-  cpp_smi->bindViewModelInstance(cpp_vmi_rcp);
+  auto cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi)->instance();
+  cpp_smi->bindViewModelInstance(cpp_vmi);
 }
 
 void rive_pointerDown(Rive_StateMachineInstance *self, float x, float y) {

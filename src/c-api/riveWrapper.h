@@ -82,7 +82,9 @@ Rive_ViewModelRuntime *
 rive_defaultArtboardViewModel(Rive_File *file, Rive_ArtboardInstance *artboard);
 Rive_ViewModelInstance *rive_createDefaultViewModelInstanceFromArtboard(
     Rive_File *self, Rive_ArtboardInstance *artboard);
-Rive_ViewModelInstance *rive_createViewModelInstance(Rive_File *file,
+// Rive_ViewModelInstance *rive_createViewModelInstance(Rive_File *file,
+//                                                      const char *name);
+Rive_ViewModelRuntime *rive_FileGetViewModelByName(Rive_File *file,
                                                      const char *name);
 
 void *rive_file_getBindableArtboardNamed(Rive_File *file, const char *name);
@@ -108,7 +110,7 @@ void rive_SMIadvanceAndApply(Rive_StateMachineInstance *sm, float secs);
 void rive_SMIdraw(Rive_StateMachineInstance *sm,
                   Rive_RiveRenderer *renderer); // this should be scene not smi
 void rive_stateMachineBindViewModelInstance(Rive_StateMachineInstance *smi,
-                                            Rive_ViewModelInstance *vmi);
+                                            Rive_ViewModelInstanceRuntime *vmi);
 void rive_pointerMove(Rive_StateMachineInstance *self, float x, float y);
 void rive_pointerDown(Rive_StateMachineInstance *self, float x, float y);
 void rive_pointerUp(Rive_StateMachineInstance *self, float x, float y);

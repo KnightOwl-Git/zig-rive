@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) void {
 
     const rive_dep = b.dependency("rive", .{
         .target = target,
-        .optimize = std.builtin.OptimizeMode.Debug,
+        .optimize = std.builtin.OptimizeMode.ReleaseSmall,
         .linkage = cpp_linkage,
     });
 
