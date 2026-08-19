@@ -51,7 +51,7 @@ pub inline fn artboardNamed(self: @This(), name: [:0]const u8) !Artboard {
 }
 
 pub inline fn defaultArtboardViewModel(self: @This(), ab: rive.Artboard) !rive.data_binding.ViewModel {
-    const ret = c.rive_defaultArtboardViewModel(self.value, @ptrCast(ab.bindable));
+    const ret = c.rive_defaultArtboardViewModel(self.value, ab.instance);
     if (ret) |vm| {
         return .{ .value = vm };
     } else {
