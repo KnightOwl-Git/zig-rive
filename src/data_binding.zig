@@ -106,6 +106,8 @@ pub const ViewModelInstance = struct {
         }
     }
 
+    //TODO: make interface for properties to reuse code more
+
     pub const Number = struct {
         ref: *anyopaque,
         callback: *const fn (self: *Number, userData: ?*anyopaque) void = undefined,
@@ -115,9 +117,6 @@ pub const ViewModelInstance = struct {
         }
         pub inline fn setValue(self: Number, value: f32) void {
             return c.rive_VMINumberSetValue(self.ref, value);
-        }
-        pub inline fn setOnChangedCallback(self: Number, new_callback: *const fn (ref_ptr: *anyopaque, value: f32) callconv(.c) void) void {
-            c.rive_VMINumberRegisterCallback(self.ref, @ptrCast(new_callback));
         }
         pub fn registerCallback(self: *Number, callback: *const fn (self: *Number, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
             self.callback = callback;
@@ -131,43 +130,66 @@ pub const ViewModelInstance = struct {
 
     pub const Boolean = struct {
         ref: *anyopaque,
+        callback: *const fn (self: *Boolean, userData: ?*anyopaque) void = undefined,
+
         pub inline fn getValue(self: Boolean) bool {
             return c.rive_VMIBooleanGetValue(self.ref);
         }
         pub inline fn setValue(self: Boolean, value: bool) void {
             return c.rive_VMIBooleanSetValue(self.ref, value);
         }
-        pub inline fn setOnChangedCallback(self: Boolean, new_callback: *const fn (ref_ptr: *anyopaque, new_value: bool) callconv(.c) void) !void {
-            c.rive_VMIBooleanRegisterCallback(self.ref, @ptrCast(new_callback));
+
+        pub fn registerCallback(self: *Boolean, callback: *const fn (self: *Boolean, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
+            self.callback = callback;
+            _ = c.rive_registerCallback(self.ref, self, user_data, &c_callback);
+        }
+        fn c_callback(self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void {
+            const boolean: *Boolean = @ptrCast(@alignCast(self));
+            boolean.callback(boolean, userData);
         }
     };
 
     pub const Trigger = struct {
         ref: *c.Rive_VMI_Trigger,
+        callback: *const fn (self: *Trigger, userData: ?*anyopaque) void = undefined,
 
         pub inline fn trigger(self: Trigger) void {
             return c.rive_VMITriggerTrigger(self.ref);
         }
-        pub inline fn setOnChangedCallback(self: Trigger, new_callback: *const fn (ref_ptr: *anyopaque, value: u32) callconv(.c) void) !void {
-            c.rive_VMITriggerSetCallback(self.ref, @ptrCast(new_callback));
+        //TODO: make sure callback doesn't fire twice per trigger
+        pub fn registerCallback(self: *Trigger, callback: *const fn (self: *Trigger, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
+            self.callback = callback;
+            _ = c.rive_registerCallback(self.ref, self, user_data, &c_callback);
+        }
+        fn c_callback(self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void {
+            const trig: *Trigger = @ptrCast(@alignCast(self));
+            trig.callback(trig, userData);
         }
     };
 
     pub const Color = struct {
         ref: *anyopaque,
+        callback: *const fn (self: *Color, userData: ?*anyopaque) void = undefined,
+
         pub inline fn getValue(self: Color) u32 {
             return c.rive_VMIColorGetValue(self.ref);
         }
         pub inline fn setValue(self: Color, value: u32) void {
             return c.rive_VMIColorSetValue(self.ref, value);
         }
-        pub inline fn setOnChangedCallback(self: Color, new_callback: *const fn (ref_ptr: *anyopaque, value: u32) callconv(.c) void) !void {
-            c.rive_VMIColorRegisterCallback(self.ref, @ptrCast(new_callback));
+        pub fn registerCallback(self: *Color, callback: *const fn (self: *Color, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
+            self.callback = callback;
+            _ = c.rive_registerCallback(self.ref, self, user_data, &c_callback);
+        }
+        fn c_callback(self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void {
+            const color: *Color = @ptrCast(@alignCast(self));
+            color.callback(color, userData);
         }
     };
 
     pub const String = struct {
         ref: *anyopaque,
+        callback: *const fn (self: *String, userData: ?*anyopaque) void = undefined,
 
         pub inline fn getValue(self: String) [:0]const u8 {
             return c.rive_VMIStringGetValue(self.ref);
@@ -176,24 +198,40 @@ pub const ViewModelInstance = struct {
             return c.rive_VMIStringSetValue(self.ref, value);
         }
 
-        pub inline fn setOnChangedCallback(self: String, new_callback: *const fn (ref_ptr: *anyopaque, value: u32) callconv(.c) void) !void {
-            c.rive_VMIStringRegisterCallback(self.ref, @ptrCast(new_callback));
+        pub fn registerCallback(self: *String, callback: *const fn (self: *String, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
+            self.callback = callback;
+            _ = c.rive_registerCallback(self.ref, self, user_data, &c_callback);
+        }
+        fn c_callback(self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void {
+            const string: *String = @ptrCast(@alignCast(self));
+            string.callback(string, userData);
         }
     };
 
     pub const Artboard = struct {
         ref: *anyopaque,
+        callback: *const fn (self: *Artboard, userData: ?*anyopaque) void = undefined,
 
         pub inline fn getName(self: Artboard) [:0]const u8 {
             return c.rive_VMIArtboardGetName(self.ref);
         }
-        pub inline fn setValue(self: String, value: rive.Artboard) void {
+        pub inline fn setValue(self: Artboard, value: rive.Artboard) void {
             return c.rive_VMIArtboardSetValue(self.ref, value.bindable);
+        }
+
+        pub fn registerCallback(self: *Artboard, callback: *const fn (self: *Artboard, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
+            self.callback = callback;
+            _ = c.rive_registerCallback(self.ref, self, user_data, &c_callback);
+        }
+        fn c_callback(self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void {
+            const artboard: *Artboard = @ptrCast(@alignCast(self));
+            artboard.callback(artboard, userData);
         }
     };
 
     pub const Enum = struct {
         ref: *anyopaque,
+        callback: *const fn (self: *Enum, userData: ?*anyopaque) void = undefined,
 
         pub inline fn getValue(self: Enum) [:0]const u8 {
             return c.rive_VMIEnumGetValue(self.ref);
@@ -210,13 +248,19 @@ pub const ViewModelInstance = struct {
         pub inline fn getTypeName(self: Enum) [:0]const u8 {
             return c.rive_VMIEnumGetType(self.ref);
         }
-        pub inline fn setOnChangedCallback(self: Enum, new_callback: *const fn (ref_ptr: *anyopaque, value: u32) callconv(.c) void) !void {
-            c.rive_VMINumberRegisterCallback(self.ref, @ptrCast(new_callback));
+        pub fn registerCallback(self: *Enum, callback: *const fn (self: *Enum, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
+            self.callback = callback;
+            _ = c.rive_registerCallback(self.ref, self, user_data, &c_callback);
+        }
+        fn c_callback(self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void {
+            const enum_prop: *Enum = @ptrCast(@alignCast(self));
+            enum_prop.callback(enum_prop, userData);
         }
     };
 
     pub const List = struct {
         ref: *anyopaque,
+        callback: *const fn (self: *List, userData: ?*anyopaque) void = undefined,
 
         pub inline fn getInstanceAt(self: List, index: c_int) ViewModelInstance {
             const ret = c.rive_VMIListGetInstanceAt(self.ref, index);
@@ -243,6 +287,15 @@ pub const ViewModelInstance = struct {
         }
         pub inline fn swap(self: List, instance: ViewModelInstance) void {
             c.rive_VMIListSwap(self.ref, instance);
+        }
+
+        pub fn registerCallback(self: *List, callback: *const fn (self: *List, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
+            self.callback = callback;
+            _ = c.rive_registerCallback(self.ref, self, user_data, &c_callback);
+        }
+        fn c_callback(self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void {
+            const list: *List = @ptrCast(@alignCast(self));
+            list.callback(list, userData);
         }
     };
 };
