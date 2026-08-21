@@ -17,12 +17,17 @@ pub inline fn defaultStateMachine(self: ArtboardInstance) !smi {
 pub inline fn stateMachineAt(self: ArtboardInstance, index: usize) !smi {
     return .{ .value = try errors.wrapNull(*c.Rive_StateMachineInstance, c.rive_artboard_stateMachineAt(self.instance, index)) };
 }
+
 pub inline fn setWidth(self: ArtboardInstance, width: f32) void {
     c.rive_artboardSetWidth(self.instance, width);
 }
 
 pub inline fn setHeight(self: ArtboardInstance, height: f32) void {
     c.rive_artboardSetHeight(self.instance, height);
+}
+
+pub inline fn advance(self: ArtboardInstance, dt: f32) void {
+    c.rive_artboardAdvance(self.instance, dt);
 }
 
 pub inline fn bindViewModelInstance(self: ArtboardInstance, vmi: rive.data_binding.ViewModelInstance) void {

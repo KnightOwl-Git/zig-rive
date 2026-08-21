@@ -102,6 +102,7 @@ Rive_StateMachineInstance *
 rive_artboard_stateMachineAt(Rive_ArtboardInstance *artboard, size_t index);
 void rive_artboardSetWidth(Rive_ArtboardInstance *artboard, float width);
 void rive_artboardSetHeight(Rive_ArtboardInstance *artboard, float height);
+void rive_artboardAdvance(Rive_ArtboardInstance *artboard, float dt);
 
 void rive_artboardBindViewModelInstance(Rive_ArtboardInstance *artboard,
                                         Rive_ViewModelInstanceRuntime *vmi);
@@ -198,6 +199,7 @@ void *rive_VMIgetPropertyArtboard(Rive_ViewModelInstanceRuntime *vmi,
                                   const char *path);
 const char *rive_VMIArtboardGetName(void *prop);
 void rive_VMIArtboardSetValue(void *prop, void *new_value);
+void rive_VMIArtboardBindVM(void *prop, void *to_bind);
 
 // ENUM
 void *rive_VMIgetPropertyEnum(Rive_ViewModelInstanceRuntime *vmi,
@@ -232,6 +234,8 @@ void* rive_registerCallback(void* instanceValueRuntime, void* zigProp, void* use
 Rive_ViewModelInstanceRuntime *
 rive_VMIgetPropertyViewModel(Rive_ViewModelInstanceRuntime *vmi,
                             const char *path);
+void rive_VMIReplaceViewModel(Rive_ViewModelInstanceRuntime *vmi, const char *path,
+                              Rive_ViewModelInstanceRuntime *new_value);
 
 // temp until I have better callback system
  Rive_ViewModelInstance *rive_getVMIFromNumber(void *self);

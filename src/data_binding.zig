@@ -106,6 +106,11 @@ pub const ViewModelInstance = struct {
         }
     }
 
+    ///swap a nested view model property with another view model instance
+    pub inline fn replaceNestedViewModel(self: ViewModelInstance, path: [:0]const u8, new_value: ViewModelInstance) void {
+        c.rive_VMIReplaceViewModel(self.value, path, new_value.value);
+    }
+
     //TODO: make interface for properties to reuse code more
 
     pub const Number = struct {
@@ -171,10 +176,10 @@ pub const ViewModelInstance = struct {
         ref: *anyopaque,
         callback: *const fn (self: *Color, userData: ?*anyopaque) void = undefined,
 
-        pub inline fn getValue(self: Color) u32 {
+        pub inline fn getValue(self: Color) c_int {
             return c.rive_VMIColorGetValue(self.ref);
         }
-        pub inline fn setValue(self: Color, value: u32) void {
+        pub inline fn setValue(self: Color, value: c_int) void {
             return c.rive_VMIColorSetValue(self.ref, value);
         }
         pub fn registerCallback(self: *Color, callback: *const fn (self: *Color, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
@@ -217,6 +222,9 @@ pub const ViewModelInstance = struct {
         }
         pub inline fn setValue(self: Artboard, value: rive.Artboard) void {
             return c.rive_VMIArtboardSetValue(self.ref, value.bindable);
+        }
+        pub inline fn bindViewModelInstance(self: Artboard, to_bind: ViewModelInstance) void {
+            c.rive_VMIArtboardBindVM(self.ref, to_bind.value);
         }
 
         pub fn registerCallback(self: *Artboard, callback: *const fn (self: *Artboard, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
