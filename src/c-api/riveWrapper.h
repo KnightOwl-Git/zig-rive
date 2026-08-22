@@ -85,7 +85,7 @@ Rive_ViewModelInstance *rive_createDefaultViewModelInstanceFromArtboard(
 // Rive_ViewModelInstance *rive_createViewModelInstance(Rive_File *file,
 //                                                      const char *name);
 Rive_ViewModelRuntime *rive_FileGetViewModelByName(Rive_File *file,
-                                                     const char *name);
+                                                   const char *name);
 
 void *rive_file_getBindableArtboardNamed(Rive_File *file, const char *name);
 
@@ -106,6 +106,10 @@ void rive_artboardAdvance(Rive_ArtboardInstance *artboard, float dt);
 
 void rive_artboardBindViewModelInstance(Rive_ArtboardInstance *artboard,
                                         Rive_ViewModelInstanceRuntime *vmi);
+
+Rive_ViewModelInstanceRuntime *
+rive_ArtboardGetGlobalViewModelInstance(Rive_ArtboardInstance *artboard,
+                                        const char *name);
 // rive::stateMachineInstance
 void rive_SMIadvanceAndApply(Rive_StateMachineInstance *sm, float secs);
 void rive_SMIdraw(Rive_StateMachineInstance *sm,
@@ -115,6 +119,8 @@ void rive_stateMachineBindViewModelInstance(Rive_StateMachineInstance *smi,
 void rive_pointerMove(Rive_StateMachineInstance *self, float x, float y);
 void rive_pointerDown(Rive_StateMachineInstance *self, float x, float y);
 void rive_pointerUp(Rive_StateMachineInstance *self, float x, float y);
+Rive_ViewModelInstanceRuntime* rive_StateMachineGetGlobalViewModelInstance(Rive_StateMachineInstance *artboard,
+                                        const char *name);
 
 // rive::RenderContext
 void rive_contextBeginFrame(Rive_RenderContext *context,
@@ -205,17 +211,16 @@ void rive_VMIArtboardBindVM(void *prop, void *to_bind);
 void *rive_VMIgetPropertyEnum(Rive_ViewModelInstanceRuntime *vmi,
                               const char *path);
 const char *rive_VMIEnumGetValue(void *prop);
-void rive_VMIEnumSetValue(void *prop, const char* new_value);
+void rive_VMIEnumSetValue(void *prop, const char *new_value);
 int rive_VMIEnumGetValueIndex(void *prop);
 void rive_VMIEnumSetValueIndex(void *prop, int new_value);
 const char *rive_VMIEnumGetType(void *prop);
 
 // LIST
 void *rive_VMIgetPropertyList(Rive_ViewModelInstanceRuntime *vmi,
-                                 const char *path);
+                              const char *path);
 
-Rive_ViewModelInstanceRuntime* rive_VMIListGetInstanceAt(void *self,
-                               int index);
+Rive_ViewModelInstanceRuntime *rive_VMIListGetInstanceAt(void *self, int index);
 
 void rive_VMIListAddInstance(void *self,
                              Rive_ViewModelInstanceRuntime *instance);
@@ -227,18 +232,20 @@ void rive_VMIListRemoveInstance(void *self,
 void rive_VMIListRemoveInstanceAt(void *self, int index);
 void rive_VMIListRemoveAll(void *self);
 void rive_VMIListSwap(void *self, int a, int b);
-void* rive_registerCallback(void* instanceValueRuntime, void* zigProp, void* userData, void(*callback)(void*, void*));
+void *rive_registerCallback(void *instanceValueRuntime, void *zigProp,
+                            void *userData, void (*callback)(void *, void *));
 
 // NESTED VIEW MODEL
 
 Rive_ViewModelInstanceRuntime *
 rive_VMIgetPropertyViewModel(Rive_ViewModelInstanceRuntime *vmi,
-                            const char *path);
-void rive_VMIReplaceViewModel(Rive_ViewModelInstanceRuntime *vmi, const char *path,
+                             const char *path);
+void rive_VMIReplaceViewModel(Rive_ViewModelInstanceRuntime *vmi,
+                              const char *path,
                               Rive_ViewModelInstanceRuntime *new_value);
 
 // temp until I have better callback system
- Rive_ViewModelInstance *rive_getVMIFromNumber(void *self);
+Rive_ViewModelInstance *rive_getVMIFromNumber(void *self);
 
 // Old stuff
 

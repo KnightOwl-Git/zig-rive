@@ -177,6 +177,22 @@ void Rive_ArtboardReset(Rive_ArtboardInstance *artboard) {
   cpp_artboard->reset();
 }
 
+Rive_ViewModelInstanceRuntime *
+rive_ArtboardGetGlobalViewModelInstance(Rive_ArtboardInstance *artboard,
+                                        const char *name) {
+
+  rive::ArtboardInstance *cpp_artboard =
+      reinterpret_cast<rive::ArtboardInstance *>(artboard);
+  auto global_vm = cpp_artboard->globalViewModelInstance(name);
+  if (global_vm) {
+
+    auto *global_vm_runtime = new rive::ViewModelInstanceRuntime(global_vm);
+    return reinterpret_cast<Rive_ViewModelInstanceRuntime *>(global_vm_runtime);
+  } else {
+    return nullptr;
+  }
+}
+
 void rive_artboardSetWidth(Rive_ArtboardInstance *artboard, float width) {
   reinterpret_cast<rive::ArtboardInstance *>(artboard)->width(width);
 }

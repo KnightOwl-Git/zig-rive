@@ -33,3 +33,12 @@ pub inline fn advance(self: ArtboardInstance, dt: f32) void {
 pub inline fn bindViewModelInstance(self: ArtboardInstance, vmi: rive.data_binding.ViewModelInstance) void {
     c.rive_artboardBindViewModelInstance(self.instance, vmi.value);
 }
+
+pub fn getGlobalViewModelInstance(self: ArtboardInstance, name: [:0]const u8) !rive.data_binding.ViewModelInstance {
+    const global_instance = c.rive_ArtboardGetGlobalViewModelInstance(self.instance, name);
+    if (global_instance) |ret| {
+        return .{ .value = ret };
+    } else {
+        return error.GlobalViewModelNotFound;
+    }
+}
