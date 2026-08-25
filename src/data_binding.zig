@@ -270,10 +270,10 @@ pub const ViewModelInstance = struct {
         ref: *anyopaque,
         callback: *const fn (self: *List, userData: ?*anyopaque) void = undefined,
 
-        pub inline fn getInstanceAt(self: List, index: c_int) ViewModelInstance {
+        pub inline fn getInstanceAt(self: List, index: c_int) !ViewModelInstance {
             const ret = c.rive_VMIListGetInstanceAt(self.ref, index);
             if (ret) |vmi| {
-                return .{ .ref = vmi };
+                return .{ .value = vmi };
             } else {
                 return error.ListError;
             }
