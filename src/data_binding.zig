@@ -251,7 +251,7 @@ pub const ViewModelInstance = struct {
             return c.rive_VMIEnumGetValueIndex(self.ref);
         }
         pub inline fn setValueIndex(self: Enum, value: c_int) void {
-            return c.rive_VMIEnum(self.ref, value);
+            return c.rive_VMIEnumSetValueIndex(self.ref, value);
         }
         pub inline fn getTypeName(self: Enum) [:0]const u8 {
             return c.rive_VMIEnumGetType(self.ref);
