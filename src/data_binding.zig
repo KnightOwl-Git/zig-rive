@@ -17,7 +17,7 @@ pub const ViewModel = struct {
 pub const ViewModelInstance = struct {
     value: *c.Rive_ViewModelInstanceRuntime,
 
-    pub fn propertyNumber(self: ViewModelInstance, path: [:0]const u8) !Number {
+    pub fn getNumber(self: ViewModelInstance, path: [:0]const u8) !Number {
         const ret = c.rive_VMIgetPropertyNumber(self.value, path);
 
         if (ret) |num| {
@@ -26,7 +26,7 @@ pub const ViewModelInstance = struct {
             return error.PropertyNotFound;
         }
     }
-    pub fn propertyBoolean(self: ViewModelInstance, path: [:0]const u8) !Boolean {
+    pub fn getBoolean(self: ViewModelInstance, path: [:0]const u8) !Boolean {
         const ret = c.rive_VMIgetPropertyBoolean(self.value, path);
 
         if (ret) |num| {
@@ -36,7 +36,7 @@ pub const ViewModelInstance = struct {
         }
     }
 
-    pub fn propertyString(self: ViewModelInstance, path: [:0]const u8) !String {
+    pub fn getString(self: ViewModelInstance, path: [:0]const u8) !String {
         const ret = c.rive_VMIgetPropertyString(self.value, path);
 
         if (ret) |num| {
@@ -46,7 +46,7 @@ pub const ViewModelInstance = struct {
         }
     }
 
-    pub fn propertyTrigger(self: ViewModelInstance, path: [:0]const u8) !Trigger {
+    pub fn getTrigger(self: ViewModelInstance, path: [:0]const u8) !Trigger {
         const ret = c.rive_VMIgetPropertyTrigger(self.value, path);
 
         if (ret) |trig| {
@@ -56,7 +56,7 @@ pub const ViewModelInstance = struct {
         }
     }
 
-    pub fn propertyColor(self: ViewModelInstance, path: [:0]const u8) !Color {
+    pub fn getColor(self: ViewModelInstance, path: [:0]const u8) !Color {
         const ret = c.rive_VMIgetPropertyColor(self.value, path);
 
         if (ret) |col| {
@@ -66,7 +66,7 @@ pub const ViewModelInstance = struct {
         }
     }
 
-    pub fn propertyEnum(self: ViewModelInstance, path: [:0]const u8) !Enum {
+    pub fn getEnum(self: ViewModelInstance, path: [:0]const u8) !Enum {
         const ret = c.rive_VMIgetPropertyEnum(self.value, path);
 
         if (ret) |enm| {
@@ -76,7 +76,7 @@ pub const ViewModelInstance = struct {
         }
     }
 
-    pub fn propertyArtboard(self: ViewModelInstance, path: [:0]const u8) !Artboard {
+    pub fn getArtboard(self: ViewModelInstance, path: [:0]const u8) !Artboard {
         const ret = c.rive_VMIgetPropertyArtboard(self.value, path);
 
         if (ret) |art| {
@@ -86,7 +86,7 @@ pub const ViewModelInstance = struct {
         }
     }
 
-    pub fn propertyViewModel(self: ViewModelInstance, path: [:0]const u8) !ViewModelInstance {
+    pub fn getViewModel(self: ViewModelInstance, path: [:0]const u8) !ViewModelInstance {
         const ret = c.rive_VMIgetPropertyViewModel(self.value, path);
 
         if (ret) |vm| {
@@ -96,7 +96,7 @@ pub const ViewModelInstance = struct {
         }
     }
 
-    pub fn propertyList(self: ViewModelInstance, path: [:0]const u8) !List {
+    pub fn getList(self: ViewModelInstance, path: [:0]const u8) !List {
         const ret = c.rive_VMIgetPropertyList(self.value, path);
 
         if (ret) |lst| {
@@ -196,7 +196,7 @@ pub const ViewModelInstance = struct {
         ref: *anyopaque,
         callback: *const fn (self: *String, userData: ?*anyopaque) void = undefined,
 
-        pub inline fn getValue(self: String) [:0]const u8 {
+        pub inline fn getValue(self: String) [*c]const u8 {
             return c.rive_VMIStringGetValue(self.ref);
         }
         pub inline fn setValue(self: String, value: [:0]const u8) void {
