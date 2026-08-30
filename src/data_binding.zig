@@ -121,7 +121,7 @@ pub const ViewModelInstance = struct {
             return c.rive_VMINumberGetValue(self.ref);
         }
         pub inline fn setValue(self: Number, value: f32) void {
-            return c.rive_VMINumberSetValue(self.ref, value);
+            c.rive_VMINumberSetValue(self.ref, value);
         }
         pub fn registerCallback(self: *Number, callback: *const fn (self: *Number, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
             self.callback = callback;
@@ -241,7 +241,7 @@ pub const ViewModelInstance = struct {
         ref: *anyopaque,
         callback: *const fn (self: *Enum, userData: ?*anyopaque) void = undefined,
 
-        pub inline fn getValue(self: Enum) [:0]const u8 {
+        pub inline fn getValue(self: Enum) [*c]const u8 {
             return c.rive_VMIEnumGetValue(self.ref);
         }
         pub inline fn setValue(self: Enum, value: [:0]const u8) void {
