@@ -232,6 +232,8 @@ void rive_VMIListRemoveInstance(void *self,
 void rive_VMIListRemoveInstanceAt(void *self, int index);
 void rive_VMIListRemoveAll(void *self);
 void rive_VMIListSwap(void *self, int a, int b);
+size_t rive_VMIListGetLength(void *self);
+
 void *rive_registerCallback(void *instanceValueRuntime, void *zigProp,
                             void *userData, void (*callback)(void *, void *));
 

@@ -626,6 +626,11 @@ void rive_VMIListSwap(void *self, int a, int b) {
   cpp_list->swap(a, b);
 }
 
+size_t rive_VMIListGetLength(void *self) {
+  auto *cpp_list = reinterpret_cast<rive::ViewModelInstanceListRuntime *>(self);
+  return cpp_list->size();
+}
+
 // NESTED VIEW MODEL
 
 Rive_ViewModelInstanceRuntime *

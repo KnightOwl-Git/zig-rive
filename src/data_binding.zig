@@ -116,6 +116,7 @@ pub const ViewModelInstance = struct {
     pub const Number = struct {
         ref: *anyopaque,
         callback: *const fn (self: *Number, userData: ?*anyopaque) void = undefined,
+        skip_callback: bool = false,
 
         pub inline fn getValue(self: Number) f32 {
             return c.rive_VMINumberGetValue(self.ref);
@@ -129,7 +130,9 @@ pub const ViewModelInstance = struct {
         }
         fn c_callback(self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void {
             const number: *Number = @ptrCast(@alignCast(self));
-            number.callback(number, userData);
+            if (!number.skip_callback) {
+                number.callback(number, userData);
+            }
         }
     };
 
@@ -155,7 +158,7 @@ pub const ViewModelInstance = struct {
     };
 
     pub const Trigger = struct {
-        ref: *c.Rive_VMI_Trigger,
+        ref: *anyopaque,
         callback: *const fn (self: *Trigger, userData: ?*anyopaque) void = undefined,
 
         pub inline fn trigger(self: Trigger) void {
@@ -295,6 +298,9 @@ pub const ViewModelInstance = struct {
         }
         pub inline fn swap(self: List, instance: ViewModelInstance) void {
             c.rive_VMIListSwap(self.ref, instance);
+        }
+        pub inline fn length(self: List) usize {
+            c.rive_VMIListGetLength(self.ref);
         }
 
         pub fn registerCallback(self: *List, callback: *const fn (self: *List, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {
