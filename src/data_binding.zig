@@ -106,6 +106,10 @@ pub const ViewModelInstance = struct {
         }
     }
 
+    pub fn getBacking(self: ViewModelInstance) *anyopaque {
+        return c.rive_VMIgetBacking(self.value).?;
+    }
+
     ///swap a nested view model property with another view model instance
     pub inline fn replaceNestedViewModel(self: ViewModelInstance, path: [:0]const u8, new_value: ViewModelInstance) void {
         c.rive_VMIReplaceViewModel(self.value, path, new_value.value);
@@ -128,6 +132,13 @@ pub const ViewModelInstance = struct {
             self.callback = callback;
             _ = c.rive_registerCallback(self.ref, self, user_data, &c_callback);
         }
+
+        //this is a test \/
+
+        pub fn registerCallbackNative(self: *Number, callback: *const fn (self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void, user_data: ?*anyopaque) void {
+            _ = c.rive_registerCallback(self.ref, self, user_data, callback);
+        }
+
         fn c_callback(self: ?*anyopaque, userData: ?*anyopaque) callconv(.c) void {
             const number: *Number = @ptrCast(@alignCast(self));
             if (!number.skip_callback) {
@@ -294,13 +305,13 @@ pub const ViewModelInstance = struct {
             c.rive_VMIListRemoveInstanceAt(self.ref, index);
         }
         pub inline fn removeInstance(self: List, instance: ViewModelInstance) void {
-            c.rive_VMIListRemoveInstanceAt(self.ref, instance.value);
+            c.rive_VMIListRemoveInstance(self.ref, instance.value);
         }
         pub inline fn swap(self: List, instance: ViewModelInstance) void {
             c.rive_VMIListSwap(self.ref, instance);
         }
         pub inline fn length(self: List) usize {
-            c.rive_VMIListGetLength(self.ref);
+            return c.rive_VMIListGetLength(self.ref);
         }
 
         pub fn registerCallback(self: *List, callback: *const fn (self: *List, userData: ?*anyopaque) void, user_data: ?*anyopaque) void {

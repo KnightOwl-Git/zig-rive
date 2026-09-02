@@ -381,6 +381,14 @@ void *rive_VMIgetPropertyNumber(Rive_ViewModelInstanceRuntime *vmi,
   return cpp_vmi->propertyNumber(path);
 }
 
+void *rive_VMIgetBacking(Rive_ViewModelInstanceRuntime *vmi) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  if (!cpp_vmi) {
+    return nullptr;
+  }
+  return cpp_vmi->instance().release();
+}
+
 float rive_VMINumberGetValue(void *prop) {
   auto *cpp_prop =
       reinterpret_cast<rive::ViewModelInstanceNumberRuntime *>(prop);
