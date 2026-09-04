@@ -115,6 +115,15 @@ pub const ViewModelInstance = struct {
         c.rive_VMIReplaceViewModel(self.value, path, new_value.value);
     }
 
+    pub fn clone(self: ViewModelInstance) !ViewModelInstance {
+        const ret = c.rive_VMIClone(self.value);
+        if (ret) {
+            return .{ .value = ret };
+        } else {
+            return error.CloneFailed;
+        }
+    }
+
     //TODO: make interface for properties to reuse code more
 
     pub const Number = struct {

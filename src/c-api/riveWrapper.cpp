@@ -369,6 +369,28 @@ void *rive_VMIgetProperty(Rive_ViewModelInstanceRuntime *vmi,
   return cpp_vmi->property(path);
 }
 
+void *rive_VMIgetBacking(Rive_ViewModelInstanceRuntime *vmi) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  if (!cpp_vmi) {
+    return nullptr;
+  }
+  return cpp_vmi->instance().release();
+}
+
+void *rive_VMIClone(Rive_ViewModelInstanceRuntime *vmi) {
+  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
+  if (!cpp_vmi) {
+    return nullptr;
+  }
+
+  auto clone = rive::rcp<rive::ViewModelInstance>(cpp_vmi->instance()->clone()->as<rive::ViewModelInstance>());
+
+  rive::ViewModelInstanceRuntime clone_instance(clone);
+  rive::rcp<rive::ViewModelInstanceRuntime> clone_rcp(&clone_instance);
+
+  return clone_rcp.release();
+}
+
 // VIEW MODEL PROPERTY DATA TYPES
 
 // NUMBER
@@ -381,13 +403,6 @@ void *rive_VMIgetPropertyNumber(Rive_ViewModelInstanceRuntime *vmi,
   return cpp_vmi->propertyNumber(path);
 }
 
-void *rive_VMIgetBacking(Rive_ViewModelInstanceRuntime *vmi) {
-  auto *cpp_vmi = reinterpret_cast<rive::ViewModelInstanceRuntime *>(vmi);
-  if (!cpp_vmi) {
-    return nullptr;
-  }
-  return cpp_vmi->instance().release();
-}
 
 float rive_VMINumberGetValue(void *prop) {
   auto *cpp_prop =

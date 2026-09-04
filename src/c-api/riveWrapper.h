@@ -164,6 +164,8 @@ rive_createDefaultVMInstance(Rive_ViewModelRuntime *vm);
 Rive_ViewModelInstance *
 rive_getViewModelInstance(Rive_ViewModelInstanceRuntime *vmi);
 
+void *rive_VMIClone(Rive_ViewModelInstanceRuntime *vmi);
+
 // NUMBER
 void *rive_VMIgetPropertyNumber(Rive_ViewModelInstanceRuntime *vmi,
                                 const char *path);
@@ -221,6 +223,7 @@ void *rive_VMIgetPropertyList(Rive_ViewModelInstanceRuntime *vmi,
                               const char *path);
 
 Rive_ViewModelInstanceRuntime *rive_VMIListGetInstanceAt(void *self, int index);
+
 
 void rive_VMIListAddInstance(void *self,
                              Rive_ViewModelInstanceRuntime *instance);
