@@ -1,5 +1,5 @@
 const std = @import("std");
-const zcc = @import("compile_commands");
+// const zcc = @import("compile_commands");
 
 pub fn build(b: *std.Build) void {
 
@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) void {
 
     const rive_dep = b.dependency("rive", .{
         .target = target,
-        .optimize = std.builtin.OptimizeMode.ReleaseSmall,
+        .optimize = std.builtin.OptimizeMode.small,
         .linkage = cpp_linkage,
     });
 
@@ -29,6 +29,14 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     const c_mod = translate_c.createModule();
+
+    const translate_glfw = b.addTranslateC(.{
+        .root_source_file = b.path("src/example/c.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const g_mod = translate_glfw.createModule();
 
     c_mod.addCSourceFile(.{ .file = b.path("src/c-api/riveWrapper.cpp") });
     c_mod.addCSourceFile(.{ .file = b.path("src/c-api/viewModelListener.cpp") });
@@ -62,12 +70,15 @@ pub fn build(b: *std.Build) void {
     c_mod.linkLibrary(rive_cpp_lib);
     c_mod.linkFramework("Metal", .{});
     c_mod.linkFramework("Foundation", .{});
+
+    g_mod.linkFramework("Metal", .{});
+    g_mod.linkFramework("Foundation", .{});
     const lib = b.addLibrary(.{ .name = "riveZig", .root_module = c_mod });
 
     targets.append(b.allocator, lib) catch @panic("OOM");
 
     //step for generating compile commands
-    _ = zcc.createStep(b, "cdb", targets.toOwnedSlice(b.allocator) catch @panic("OOM"));
+    // _ = zcc.createStep(b, "cdb", targets.toOwnedSlice(b.allocator) catch @panic("OOM"));
 
     var should_build_example = true;
 
@@ -78,20 +89,21 @@ pub fn build(b: *std.Build) void {
     }
 
     if (should_build_example) {
-        const sdl3 = b.lazyDependency("sdl3", .{
+        const glfw = b.lazyDependency("glfw_zig", .{
             .target = target,
             .optimize = optimize,
         });
+        g_mod.linkLibrary(glfw.?.artifact("glfw"));
         //platform specific
 
-        const example = b.addModule("sdl_rive_example", .{
+        const example = b.addModule("glfw_rive_example", .{
             .target = target,
             .optimize = optimize,
             .root_source_file = b.path("src/example/main.zig"),
             .imports = &.{
                 // .{ .name = "rive", .module = mod },
-                .{ .name = "sdl3", .module = sdl3.?.module("sdl3") },
                 .{ .name = "c", .module = c_mod }, //eventually put this in mod and import mod instead
+                .{ .name = "g", .module = g_mod }, //eventually put this in mod and import mod instead
                 .{ .name = "rive", .module = rive },
                 .{ .name = "objc", .module = objc.?.module("mach-objc") },
             },
@@ -105,7 +117,7 @@ pub fn build(b: *std.Build) void {
         //add run step
         const run_exe = b.addRunArtifact(exe);
 
-        const run = b.step("run", "run sdl3 example");
+        const run = b.step("run", "run glfw example");
         run.dependOn(&run_exe.step);
 
         //ZLS check step for build-on-save errors

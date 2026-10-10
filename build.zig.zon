@@ -2,7 +2,7 @@
     .name = .zig_rive,
     .version = "0.1.0",
     .fingerprint = 0x2ba3efe0afa7b22b, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.0",
     .dependencies = .{
         //to update version, run::
         //zig fetch --save git+https://github.com/KnightOwl-Git/rive-zig-build
@@ -12,18 +12,18 @@
         },
         .rive = .{
             //last fetched 9/28/26
-            .url = "git+https://github.com/KnightOwl-Git/rive-zig-build#13c532e44fa28ce7fba78a5b34036747a42f0116",
-            .hash = "rive-0.1.335-QURrJdc0AQCUfUaYEw0wx6yfsdLyiSi7p16pQynNfF5N",
-        },
-        .sdl3 = .{
-            .url = "git+https://codeberg.org/7Games/zig-sdl3?ref=v0.2.1#7cf436e4a8622a0232e53ea5cb4df82e8cadaaaa",
-            .hash = "sdl3-0.2.1-NmT1Q9YZKAAmuTV7fFuZHwH2jFQtw2uvVahQSMSD6DbK",
-            .lazy = true,
+            // .url = "git+https://github.com/KnightOwl-Git/rive-zig-build#1642835ed4c9c038879f4446f77eab9c7d86acc4",
+            // .hash = "rive-0.1.335-QURrJas8AQAjiPT45M-XE3PsxlO8gJoRmhxoPspfH6Jz",
+            .path = "../rive-zig-build/",
         },
         .mach_objc = .{
             .url = "git+https://code.hexops.org/hexops/mach-objc.git#7064a4479b8cb85736ff6fe90ae34465d04ace55",
             .hash = "mach_objc-0.0.0-pF1e0qYwDQAiwxSRszSrjoQ7OMCJBT0kmesKXnI9DStn",
             .lazy = true,
+        },
+        .glfw_zig = .{
+            .url = "git+https://github.com/tiawl/glfw.zig.git#5c0f5fcf703152c7e0bc1c870fa0cbaa53d159ea",
+            .hash = "glfw_zig-1.0.0-NrvYoxInGgCd0xJ5a4UL2mi9q77pmpwTIwSZ4Tlm4ylz",
         },
     },
     .paths = .{
