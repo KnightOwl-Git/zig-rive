@@ -2,7 +2,7 @@
     .name = .zig_rive,
     .version = "0.1.0",
     .fingerprint = 0x2ba3efe0afa7b22b, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.17.0",
+    .minimum_zig_version = "0.17.1",
     .dependencies = .{
         //to update version, run::
         //zig fetch --save git+https://github.com/KnightOwl-Git/rive-zig-build
@@ -17,8 +17,8 @@
             .path = "../rive-zig-build/",
         },
         .mach_objc = .{
-            .url = "git+https://code.hexops.org/hexops/mach-objc.git#7064a4479b8cb85736ff6fe90ae34465d04ace55",
-            .hash = "mach_objc-0.0.0-pF1e0qYwDQAiwxSRszSrjoQ7OMCJBT0kmesKXnI9DStn",
+            .url = "https://pkg.hexops.org/pkg/hexops/mach-objc/57d720b5e23890cee716c7c26d332ce4bc92f5fe.tar.gz",
+            .hash = "mach_objc-0.0.0-pF1e0uxBDQCF1LPxC3frdqaKcKg_tyOMXauSu8bCCeBH",
             .lazy = true,
         },
         .glfw_zig = .{

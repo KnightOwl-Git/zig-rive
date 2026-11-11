@@ -46,7 +46,7 @@ pub fn main() !void {
     var last_time: f64 = 0;
 
     while (g.glfwWindowShouldClose(window) != 1) {
-        g.glfwSwapBuffers(window);
+        // g.glfwSwapBuffers(window);
         g.glfwPollEvents();
 
         //time measurement
@@ -64,6 +64,8 @@ pub fn main() !void {
         g.glfwGetWindowContentScale(window, &xscale, &yscale);
 
         const width_f, const height_f = try metal_impl.beginFrame();
+
+        std.debug.print("width: {d}, height: {d}\n", .{ width_f, height_f });
 
         //set artboard width and height to match render target size
         artboard.setWidth(width_f / xscale);
